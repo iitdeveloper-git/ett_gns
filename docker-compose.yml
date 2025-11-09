@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  ett_gns_service:
+    build: .
+    ports:
+      - "${PORT}:${PORT}"  # Use the PORT variable from .env
+    environment:
+      - FLASK_ENV=${FLASK_ENV}  # Use FLASK_ENV from .env
