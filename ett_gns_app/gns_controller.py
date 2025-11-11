@@ -19,13 +19,21 @@ class GnsController:
         :param template_name: The name of the template (must be an HTML file)
         :param data: Dictionary of dynamic data for template rendering
         """
-        # Validation for channel, subject, recipient, and template
-        required_keys = ["channel_name", "subject", "recipient", "template_name"]
-        missing_keys = [key for key in required_keys if key is None]
-        if  missing_keys:
-            self.logger.error("Missing required keys: %s", missing_keys)
-            raise ValueError(f"Missing required key value: {missing_keys}")
+        # Validation for required parameters
+        required_params = {
+            "channel_name": channel_name,
+            "subject": subject,
+            "recipient": recipient,
+            "template_name": template_name
+        }
+        
+        missing_keys = [key for key, value in required_params.items() if value is None or value == ""]
+        if missing_keys:
+            self.logger.error("Missing required parameters: %s", missing_keys)
+            raise ValueError(f"Missing required parameters: {missing_keys}")
+            
         if not template_name.endswith('.html'):
+            self.logger.error("Invalid template format: %s", template_name)
             raise ValueError("Template name must be an HTML file.")
 
         # Check if the channel exists
