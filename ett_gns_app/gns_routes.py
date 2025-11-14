@@ -55,7 +55,7 @@ def health_check():
     return jsonify({"status": "healthy"}), 200
 
 
-@notification_bp.route("/v1/send_notification", methods=["POST"])
+@notification_bp.route("/send_universal_notification", methods=["POST"])
 def send_notificationv1():
     """
     Universal endpoint to send email/notification using a template.
@@ -133,4 +133,4 @@ def method_not_allowed(e):
     return jsonify({"error": "Method Not Allowed", "message": "The method is not allowed for the requested URL."}), 405
 
 def register_blueprints(app):
-    app.register_blueprint(notification_bp)
+    app.register_blueprint(notification_bp, url_prefix='/v1')
