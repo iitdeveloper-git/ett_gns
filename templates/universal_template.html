@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ subject or "Notification" }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        p {
+            color: #666;
+            line-height: 1.6;
+        }
+        .cta-button {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 22px;
+            background-color: #4c6ef5;
+            color: #fff !important;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #aaa;
+            font-size: 13px;
+        }
+        .dynamic-block {
+            margin-top: 15px;
+            background: #f8f9fc;
+            padding: 12px;
+            border-left: 3px solid #4c6ef5;
+            border-radius: 4px;
+            color: #444;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        
+        <!-- Header / Title -->
+        <h1>{{ heading or "" }}</h1>
+
+        <!-- Hello message -->
+        {% if user_name %}
+        <p>Hello {{ user_name }},</p>
+        {% endif %}
+
+        <!-- Main body message -->
+        <p>{{ body_message or "" }}</p>
+
+        <!-- Dynamic block (OTP, custom HTML, etc.) -->
+        {% if dynamic_block %}
+        <div class="dynamic-block">
+            {{ dynamic_block|safe }}
+        </div>
+        {% endif %}
+
+        <!-- CTA Button -->
+        {% if cta_url %}
+        <p>
+            <a href="{{ cta_url }}" class="cta-button">
+                {{ cta_label or "Click Here" }}
+            </a>
+        </p>
+        {% endif %}
+
+        <p>Best Regards,<br>{{ sender_name or "The Team" }}</p>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>&copy; {{ year or "2025" }} {{ sender_name or "Our Platform" }}.  
+            All rights reserved.</p>
+        </div>
+
+    </div>
+</body>
+</html>
