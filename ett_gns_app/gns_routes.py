@@ -55,6 +55,73 @@ def health_check():
     return jsonify({"status": "healthy"}), 200
 
 
+@notification_bp.route("/send_universal_notification", methods=["POST"])
+def send_notificationv1():
+    """
+    Universal endpoint to send email/notification using a template.
+    
+    Expected Payload:
+    {
+        "recipient": "user@example.com",
+        "subject": "Welcome!",
+        "template_name": "universal_template.html",
+        "sender_name": "Oryne Notifications",
+        "sender_email": "no-reply@oryne.com",
+        "channel_name": "email",  # Optional
+        "data": {
+            "heading": "...",
+            "user_name": "...",
+            "body_message": "...",
+            "dynamic_block": "<p>...</p>",
+            "cta_url": "...",
+            "cta_label": "...",
+            "year": 2025
+        }
+    }
+    """
+    try:
+        payload = request.get_json()
+
+        # Required fields
+        recipient = payload.get("recipient")
+        subject = payload.get("subject")
+        template_name = payload.get("template_name")
+
+        if not recipient or not subject or not template_name:
+            return jsonify({
+                "error": "recipient, subject, and template_name are required"
+            }), 400
+
+        # Optional
+        channel_name = payload.get("channel_name", "email")
+        sender_name = payload.get("sender_name", "Oryne")
+        sender_email = payload.get("sender_email", "no-reply@oryne.com")
+
+        # Data block
+        data = payload.get("data", {})
+        data["sender_name"] = sender_name
+
+        # Always allow template to know sender email if needed
+        data["sender_email"] = sender_email
+
+        # Send notification through controller
+        gns_controller.send_notification(
+
+            channel_name=channel_name, 
+            recipient=recipient,
+            subject=subject,
+            template_name=template_name,
+            data=data,
+        )
+
+        return jsonify({
+            "success": True,
+            "detail": "Notification enqueued"
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 # Error handlers
 @notification_bp.errorhandler(404)
@@ -66,4 +133,4 @@ def method_not_allowed(e):
     return jsonify({"error": "Method Not Allowed", "message": "The method is not allowed for the requested URL."}), 405
 
 def register_blueprints(app):
-    app.register_blueprint(notification_bp)
+    app.register_blueprint(notification_bp, url_prefix='/v1')
