@@ -1,39 +1,143 @@
-from flask import Blueprint, request, jsonify
-from ett_gns_app.gns_controller import GnsController
+from flask import Blueprint, request, jsonify, current_app
+from ett_gns_app.limit import limiter
 
 # Create a Blueprint for the notification routes
 notification_bp = Blueprint('notifications', __name__)
 
-# Initialize the notification service
-gns_controller = GnsController()
-
 @notification_bp.route("/", methods=["GET"])
 def home():
     """
-    Home endpoint for the service.
+    Home - Welcome endpoint
+    Returns service info and version.
+    ---
+    tags:
+      - General
+    responses:
+      200:
+        description: Service info
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Welcome to the ETT Service!"
+            version:
+              type: string
+              example: "v1.0.0"
     """
     return jsonify({
         "message": "Welcome to the ETT Service!",
         "version": "v1.0.0"
     }), 200
 
+@notification_bp.route("/channels", methods=["GET"])
+def get_channels():
+    """
+    List available channels
+    ---
+    tags:
+      - General
+    responses:
+      200:
+        description: List of supported channels
+        schema:
+          type: object
+          properties:
+            channels:
+              type: array
+              items:
+                type: string
+    """
+    gns_controller = current_app.extensions.get('gns_controller')
+    channels = list(gns_controller.channels.keys()) if gns_controller else []
+    return jsonify({"channels": channels}), 200
+
+
 @notification_bp.route("/send_notification", methods=["POST"])
+@limiter.limit("10 per minute")
 def send_notification():
     """
-    Endpoint to send a notification through a specified channel.
+    Send Notification
+    Enqueues a notification through a specified channel.
+    ---
+    tags:
+      - Notifications
+    consumes:
+      - application/json
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+            - channel_name
+            - recipient
+            - subject
+            - template_name
+          properties:
+            channel_name:
+              type: string
+              description: "Channel to send through (e.g. 'email')"
+              example: "email"
+            recipient:
+              type: string
+              description: "Recipient email or contact info"
+              example: "user@example.com"
+            subject:
+              type: string
+              description: "Notification subject"
+              example: "Welcome!"
+            template_name:
+              type: string
+              description: "HTML template filename"
+              example: "welcome_email.html"
+            data:
+              type: object
+              description: "Dynamic data for template rendering"
+              example:
+                user_name: "Ravi"
+                welcome_message: "Welcome to the platform!"
+    responses:
+      202:
+        description: Notification queued successfully
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Notification queued successfully"
+            notification_id:
+              type: string
+      400:
+        description: Bad request or validation error
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+      500:
+        description: Internal Server Error
     """
+    gns_controller = current_app.extensions.get('gns_controller')
+    if not gns_controller:
+        return jsonify({"error": "Controller not initialized"}), 500
+
     try:
         # Get JSON payload from request
         payload = request.get_json()
+        if not payload:
+            return jsonify({"error": "Invalid or missing JSON payload"}), 400
+            
         # Extract required fields from payload
         channel_name = payload.get("channel_name")
         recipient = payload.get("recipient")
         subject = payload.get("subject")
         template_name = payload.get("template_name")
-        data = payload.get("data", {})  # Optional dynamic data for templates
+        data = payload.get("data", {})
 
-        # Send the notification
-        gns_controller.send_notification(
+        # Queue the notification
+        notification_id = gns_controller.send_notification(
             channel_name=channel_name,
             recipient=recipient,
             subject=subject,
@@ -41,29 +145,39 @@ def send_notification():
             data=data
         )
 
-        # Return success response
-        return jsonify({"message": "Notification sent successfully"}), 200
+        return jsonify({
+            "message": "Notification queued successfully",
+            "notification_id": notification_id
+        }), 202
 
-    except Exception as e:
+    except ValueError as e:
         return jsonify({"error": str(e)}), 400
+    except NotImplementedError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        current_app.logger.error(f"Unexpected error: {str(e)}")
+        return jsonify({"error": "Internal Server Error"}), 500
 
 @notification_bp.route("/health", methods=["GET"])
 def health_check():
     """
-    Health check endpoint to verify the service is running.
+    Health Check
+    Verify the service is running.
+    ---
+    tags:
+      - General
+    responses:
+      200:
+        description: Service is healthy
+        schema:
+          type: object
+          properties:
+            status:
+              type: string
+              example: "healthy"
     """
     return jsonify({"status": "healthy"}), 200
 
-
-
-# Error handlers
-@notification_bp.errorhandler(404)
-def not_found(e):
-    return jsonify({"error": "Not Found", "message": "The requested resource could not be found."}), 404
-
-@notification_bp.errorhandler(405)
-def method_not_allowed(e):
-    return jsonify({"error": "Method Not Allowed", "message": "The method is not allowed for the requested URL."}), 405
 
 def register_blueprints(app):
     app.register_blueprint(notification_bp)

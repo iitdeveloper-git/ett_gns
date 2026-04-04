@@ -3,44 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome Email</title>
+    <title>Welcome</title>
+    <!--[if !mso]><!-->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!--<![endif]-->
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
             margin: 0;
             padding: 0;
+            background-color: #f7f9fc;
+            font-family: 'Inter', Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
         }
-        .container {
+        table {
+            border-spacing: 0;
+            border-collapse: collapse;
+        }
+        .wrapper {
+            width: 100%;
+            table-layout: fixed;
+            background-color: #f7f9fc;
+            padding-top: 40px;
+            padding-bottom: 40px;
+        }
+        .main {
+            background-color: #ffffff;
+            margin: 0 auto;
+            width: 100%;
             max-width: 600px;
-            margin: 20px auto;
+            border-radius: 12px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .header h1 {
+            color: #ffffff;
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        .content {
+            padding: 40px 30px;
+            color: #334155;
+            line-height: 1.6;
+        }
+        .content h2 {
+            color: #0f172a;
+            font-size: 22px;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        .content p {
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+        .highlight-box {
+            background-color: #f1f5f9;
+            border-left: 4px solid #6366f1;
             padding: 20px;
-            background-color: #fff;
+            border-radius: 4px;
+            margin-bottom: 30px;
+        }
+        .button-container {
+            text-align: center;
+            margin: 35px 0;
+        }
+        .button {
+            background-color: #6366f1;
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 14px 32px;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            font-weight: 600;
+            font-size: 16px;
+            display: inline-block;
+            transition: background-color 0.3s;
         }
-        h1 {
-            color: #333;
-        }
-        p {
-            color: #666;
+        .signature {
+            margin-top: 40px;
+            font-size: 15px;
+            color: #64748b;
         }
         .footer {
-            margin-top: 20px;
             text-align: center;
-            color: #aaa;
+            padding: 30px;
+            color: #94a3b8;
+            font-size: 13px;
+        }
+        .footer a {
+            color: #6366f1;
+            text-decoration: none;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Welcome, {{ user_name }}!</h1>
-        <p>{{ welcome_message }}</p>
-        <p>We’re thrilled to have you on board. Feel free to reach out to us if you have any questions.</p>
-        <p>Best Regards,<br>The Team</p>
-        <div class="footer">
-            <p>&copy; 2024 Our Platform. All rights reserved.</p>
-        </div>
+    <div class="wrapper">
+        <table class="main" align="center" width="100%">
+            <!-- Header -->
+            <tr>
+                <td class="header">
+                    <h1>Welcome Aboard! 🎉</h1>
+                </td>
+            </tr>
+            <!-- Body Content -->
+            <tr>
+                <td class="content">
+                    <h2>Hello, {{ user_name }}!</h2>
+                    
+                    <div class="highlight-box">
+                        <p style="margin: 0;"><strong>Message for you:</strong><br/>{{ welcome_message }}</p>
+                    </div>
+
+                    <p>We are absolutely thrilled to have you join our platform. You are now part of a community dedicated to excellence, productivity, and pushing the boundaries of what is possible.</p>
+                    
+                    <p>To get the most out of your experience, we recommend exploring your dashboard and setting up your profile.</p>
+
+                    <div class="button-container">
+                        <a href="{{ action_url }}" class="button">Get Started Now</a>
+                    </div>
+                    
+                    <p>If you have any questions or need a hand getting set up, our support team is just an email away.</p>
+
+                    <div class="signature">
+                        Best regards,<br>
+                        <strong>The {{ company_name }} Team</strong>
+                    </div>
+                </td>
+            </tr>
+            <!-- Footer -->
+            <tr>
+                <td class="footer">
+                    <p>&copy; {{ company_name }}. All rights reserved.</p>
+                    <p>You received this email because you recently created an account with us. <br> <a href="{{ action_url }}">Visit Dashboard</a></p>
+                </td>
+            </tr>
+        </table>
     </div>
 </body>
 </html>

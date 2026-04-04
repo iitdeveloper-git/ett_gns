@@ -4,5 +4,7 @@ from ett_gns_app import create_app
 # Create the Flask application
 app = create_app()
 if __name__ == "__main__":
-    # Run the application
-    app.run(debug=True)  # Set debug to True for development; change to False in production
+    import os
+    debug_mode = os.environ.get("FLASK_ENV") == "development"
+    # Run the application locally
+    app.run(debug=debug_mode, host="0.0.0.0")
