@@ -92,7 +92,7 @@ GET /channels
 ```
 
 ### 3. Send Notification
-Enqueues a message into the background thread pool parser. 
+Enqueues or synchronously delivers a message using the requested channel.
 *Note: This route is strictly rate-limited at 10 requests per minute by default.*
 
 ```http
@@ -106,6 +106,7 @@ Content-Type: application/json
     "recipient": "user@example.com",
     "subject": "Securing Your Account",
     "template_name": "password_reset.html",
+    "sync": false,
     "data": {
         "user_name": "John Doe",
         "company_name": "Acme Corp",
@@ -113,9 +114,14 @@ Content-Type: application/json
     }
 }
 ```
+
+**Payload Options:**
+- `sync` *(boolean, default: true)*: If `false`, the API queues the notification and returns a `202 Accepted` immediately. If `true`, the API blocks the request until the channel effectively delivers the message and returns a `200 OK`. 
+
 **Responses:**
-- `202 Accepted`: Job queued seamlessly (Returns a `notification_id`).
-- `400 Bad Request`: Usually due to missing data keys required by the requested HTML template.
+- `200 OK`: Message delivered perfectly (when `sync: true`).
+- `202 Accepted`: Job queued seamlessly (when `sync: false`).
+- `400 Bad Request`: Validation error, missing keys, or upstream failure (like SMTP auth failure) when attempting synchronous execution.
 - `429 Too Many Requests`: Client surpassed the rate limiter ceiling.
 
 ---

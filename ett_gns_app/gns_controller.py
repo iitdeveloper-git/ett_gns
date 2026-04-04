@@ -29,7 +29,7 @@ class GnsController:
         except Exception as e:
             self.logger.error(f"[{notification_id}] Async send failed: {str(e)}")
 
-    def send_notification(self, channel_name: str, recipient: str, subject: str, template_name: str, data: dict) -> str:
+    def send_notification(self, channel_name: str, recipient: str, subject: str, template_name: str, data: dict, sync: bool = False) -> str:
         """
         Submits a notification to be sent asynchronously.
         Returns a unique notification ID.
@@ -56,17 +56,27 @@ class GnsController:
 
         notification_id = str(uuid.uuid4())
         
-        self.logger.info(f"[{notification_id}] Enqueueing notification via {channel_name} to {recipient}")
+        self.logger.info(f"[{notification_id}] Enqueueing notification via {channel_name} to {recipient} (sync={sync})")
         
-        # Dispatch asynchronously
-        self.executor.submit(
-            self._async_send,
-            channel,
-            recipient,
-            subject,
-            template_name,
-            data,
-            notification_id
-        )
+        if sync:
+            # Dispatch synchronously and await result
+            try:
+                self.logger.info(f"[{notification_id}] Starting sync send via {channel.channel_name}")
+                channel.send(recipient, subject, template_name, data)
+                self.logger.info(f"[{notification_id}] Sync send completed via {channel.channel_name}")
+            except Exception as e:
+                self.logger.error(f"[{notification_id}] Sync send failed: {str(e)}")
+                raise e # re-raise to be caught by route handler
+        else:
+            # Dispatch asynchronously
+            self.executor.submit(
+                self._async_send,
+                channel,
+                recipient,
+                subject,
+                template_name,
+                data,
+                notification_id
+            )
 
         return notification_id

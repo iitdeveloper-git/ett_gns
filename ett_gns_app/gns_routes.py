@@ -92,15 +92,31 @@ def send_notification():
               type: string
               description: "HTML template filename"
               example: "welcome_email.html"
+            sync:
+              type: boolean
+              description: "Wait until execution finishes (true) or drop into async queue (false)."
+              example: false
             data:
               type: object
               description: "Dynamic data for template rendering"
               example:
                 user_name: "Ravi"
                 welcome_message: "Welcome to the platform!"
+                company_name: "Acme Corp"
+                action_url: "https://dashboard.example.com"
     responses:
+      200:
+        description: Notification delivered successfully (if sync=true)
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Notification delivered successfully"
+            notification_id:
+              type: string
       202:
-        description: Notification queued successfully
+        description: Notification queued successfully (if sync=false)
         schema:
           type: object
           properties:
@@ -136,19 +152,29 @@ def send_notification():
         template_name = payload.get("template_name")
         data = payload.get("data", {})
 
-        # Queue the notification
+        # Check if client wants synchronous delivery
+        is_sync = payload.get("sync", True)  # Defaulting to True as requested to confirm delivery
+
+        # Queue or send the notification
         notification_id = gns_controller.send_notification(
             channel_name=channel_name,
             recipient=recipient,
             subject=subject,
             template_name=template_name,
-            data=data
+            data=data,
+            sync=is_sync
         )
 
-        return jsonify({
-            "message": "Notification queued successfully",
-            "notification_id": notification_id
-        }), 202
+        if is_sync:
+            return jsonify({
+                "message": "Notification delivered successfully",
+                "notification_id": notification_id
+            }), 200
+        else:
+            return jsonify({
+                "message": "Notification queued successfully",
+                "notification_id": notification_id
+            }), 202
 
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
