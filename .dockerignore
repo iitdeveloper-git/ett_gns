@@ -5,6 +5,11 @@ __pycache__
 *.pyo
 .pytest_cache
 tests/
+admin/node_modules
+admin/.next
+gns.db
+.mypy_cache
+.ruff_cache
 .gitignore
 Dockerfile
 docker-compose.yml

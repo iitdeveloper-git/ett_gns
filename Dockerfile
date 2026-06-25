@@ -1,32 +1,22 @@
-# Use an official Python runtime as a parent image
-FROM python:3.10-slim
+FROM python:3.12-slim AS builder
 
-# Create non-root user
-RUN groupadd -r appuser && useradd -r -g appuser appuser
-
-# Set the working directory in the container
-WORKDIR /app
-
-# Copy the requirements file into the container
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1
+WORKDIR /build
 COPY requirements.txt .
+RUN python -m venv /opt/venv \
+    && /opt/venv/bin/pip install --upgrade pip \
+    && /opt/venv/bin/pip install -r requirements.txt
 
-# Install any needed packages specified in requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+FROM python:3.12-slim AS runtime
 
-# Copy the current directory contents into the container at /app
-COPY . .
-
-# Change ownership of /app
-RUN chown -R appuser:appuser /app
-
-# Switch to non-root user
-USER appuser
-
-# Make port 5000 available to the world outside this container
+ENV PATH="/opt/venv/bin:$PATH" \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+RUN groupadd --system gns && useradd --system --gid gns --home /app gns
+WORKDIR /app
+COPY --from=builder /opt/venv /opt/venv
+COPY --chown=gns:gns . .
+USER gns
 EXPOSE 5000
-
-# Define environment variable
-ENV FLASK_APP=ett_gns_app
-
-# Run the application using Gunicorn
-CMD ["gunicorn", "-w", "4", "--threads", "2", "-b", "0.0.0.0:5000", "run:app"]
+CMD ["uvicorn", "ett_gns_app.main:app", "--host", "0.0.0.0", "--port", "5000", "--proxy-headers"]

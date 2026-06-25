@@ -5,6 +5,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class AppConfig:
     smtp_server: str
@@ -16,11 +17,12 @@ class AppConfig:
     flask_env: str
     port: int
 
+
 def load_config() -> AppConfig:
     """Loads configuration from environment variables."""
     # Ensure env is loaded
     load_dotenv()
-    
+
     port_str = os.getenv("SMTP_PORT", "465")
     try:
         smtp_port = int(port_str)
@@ -43,8 +45,8 @@ def load_config() -> AppConfig:
         smtp_auth_name=os.getenv("SMTP_AUTH_NAME", ""),
         template_dir=os.getenv("TEMPLATE_DIR", "templates"),
         flask_env=os.getenv("FLASK_ENV", "development"),
-        port=app_port
+        port=app_port,
     )
-    
+
     logger.info("Configuration loaded successfully")
     return config

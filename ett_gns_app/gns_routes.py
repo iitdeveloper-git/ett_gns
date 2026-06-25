@@ -2,7 +2,8 @@ from flask import Blueprint, request, jsonify, current_app
 from ett_gns_app.limit import limiter
 
 # Create a Blueprint for the notification routes
-notification_bp = Blueprint('notifications', __name__)
+notification_bp = Blueprint("notifications", __name__)
+
 
 @notification_bp.route("/", methods=["GET"])
 def home():
@@ -25,10 +26,8 @@ def home():
               type: string
               example: "v1.0.0"
     """
-    return jsonify({
-        "message": "Welcome to the ETT Service!",
-        "version": "v1.0.0"
-    }), 200
+    return jsonify({"message": "Welcome to the ETT Service!", "version": "v1.0.0"}), 200
+
 
 @notification_bp.route("/channels", methods=["GET"])
 def get_channels():
@@ -48,7 +47,7 @@ def get_channels():
               items:
                 type: string
     """
-    gns_controller = current_app.extensions.get('gns_controller')
+    gns_controller = current_app.extensions.get("gns_controller")
     channels = list(gns_controller.channels.keys()) if gns_controller else []
     return jsonify({"channels": channels}), 200
 
@@ -135,7 +134,7 @@ def send_notification():
       500:
         description: Internal Server Error
     """
-    gns_controller = current_app.extensions.get('gns_controller')
+    gns_controller = current_app.extensions.get("gns_controller")
     if not gns_controller:
         return jsonify({"error": "Controller not initialized"}), 500
 
@@ -144,7 +143,7 @@ def send_notification():
         payload = request.get_json()
         if not payload:
             return jsonify({"error": "Invalid or missing JSON payload"}), 400
-            
+
         # Extract required fields from payload
         channel_name = payload.get("channel_name")
         recipient = payload.get("recipient")
@@ -162,19 +161,20 @@ def send_notification():
             subject=subject,
             template_name=template_name,
             data=data,
-            sync=is_sync
+            sync=is_sync,
         )
 
         if is_sync:
-            return jsonify({
-                "message": "Notification delivered successfully",
-                "notification_id": notification_id
-            }), 200
+            return jsonify(
+                {
+                    "message": "Notification delivered successfully",
+                    "notification_id": notification_id,
+                }
+            ), 200
         else:
-            return jsonify({
-                "message": "Notification queued successfully",
-                "notification_id": notification_id
-            }), 202
+            return jsonify(
+                {"message": "Notification queued successfully", "notification_id": notification_id}
+            ), 202
 
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
@@ -183,6 +183,7 @@ def send_notification():
     except Exception as e:
         current_app.logger.error(f"Unexpected error: {str(e)}")
         return jsonify({"error": "Internal Server Error"}), 500
+
 
 @notification_bp.route("/health", methods=["GET"])
 def health_check():

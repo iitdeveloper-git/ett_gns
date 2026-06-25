@@ -52,3 +52,12 @@ Thumbs.db
 .env
 .env_ett_gns
 
+# Local runtime and test artifacts
+gns.db
+.coverage
+coverage.xml
+htmlcov/
+admin/test-results/
+admin/playwright-report/
+admin/.next/
+*.tsbuildinfo

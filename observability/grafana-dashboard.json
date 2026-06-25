@@ -1,0 +1,12 @@
+{
+  "title": "GNS Operations",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "panels": [
+    {"type": "timeseries", "title": "API request rate", "targets": [{"expr": "sum(rate(gns_http_requests_total[5m])) by (route, status)"}]},
+    {"type": "timeseries", "title": "API p95 latency", "targets": [{"expr": "histogram_quantile(0.95, sum(rate(gns_http_request_duration_seconds_bucket[5m])) by (le, route))"}]},
+    {"type": "timeseries", "title": "Provider p95 latency", "targets": [{"expr": "histogram_quantile(0.95, sum(rate(gns_provider_duration_seconds_bucket[5m])) by (le, channel, provider_type))"}]},
+    {"type": "timeseries", "title": "Delivery outcomes", "targets": [{"expr": "sum(rate(gns_delivery_results_total[5m])) by (channel, provider_type, result)"}]}
+  ]
+}

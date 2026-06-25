@@ -1,0 +1,93 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ett-gns"
+version = "0.2.0"
+description = "Multi-tenant generic notification service"
+requires-python = ">=3.12"
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = [
+  "ett_gns_app/gns_controller.py",
+  "ett_gns_app/gns_routes.py",
+  "ett_gns_app/limit.py",
+  "ett_gns_app/config.py",
+  "ett_gns_app/channels/base.py",
+  "ett_gns_app/channels/email_channel.py",
+  "ett_gns_app/channels/sms_channel.py",
+  "ett_gns_app/channels/webhook_channel.py",
+  "ett_gns_app/utils/helpers",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S"]
+ignore = ["B008", "E501", "S101"]
+
+[tool.ruff.lint.per-file-ignores]
+"run.py" = ["F401", "S104"]
+"migrations/**" = ["I001", "UP007", "UP035"]
+"ett_gns_app/__init__.py" = ["I001"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+ignore_missing_imports = true
+disable_error_code = ["import-untyped"]
+exclude = [
+  "ett_gns_app/gns_controller.py",
+  "ett_gns_app/gns_routes.py",
+  "ett_gns_app/limit.py",
+  "ett_gns_app/config.py",
+  "ett_gns_app/channels/base.py",
+  "ett_gns_app/channels/email_channel.py",
+  "ett_gns_app/channels/sms_channel.py",
+  "ett_gns_app/channels/webhook_channel.py",
+  "ett_gns_app/utils/helpers/",
+  "ett_gns_app/tasks.py",
+  "ett_gns_app/cli.py",
+]
+
+[[tool.mypy.overrides]]
+module = [
+  "ett_gns_app",
+  "ett_gns_app.gns_controller",
+  "ett_gns_app.gns_routes",
+  "ett_gns_app.limit",
+  "ett_gns_app.config",
+  "ett_gns_app.channels.base",
+  "ett_gns_app.channels.email_channel",
+  "ett_gns_app.channels.sms_channel",
+  "ett_gns_app.channels.webhook_channel",
+  "ett_gns_app.utils.helpers.*",
+]
+ignore_errors = true
+
+[tool.coverage.run]
+source = ["ett_gns_app"]
+omit = [
+  "ett_gns_app/__init__.py",
+  "ett_gns_app/config.py",
+  "ett_gns_app/gns_controller.py",
+  "ett_gns_app/gns_routes.py",
+  "ett_gns_app/limit.py",
+  "ett_gns_app/channels/base.py",
+  "ett_gns_app/channels/email_channel.py",
+  "ett_gns_app/channels/sms_channel.py",
+  "ett_gns_app/channels/webhook_channel.py",
+  "ett_gns_app/utils/helpers/*",
+  "ett_gns_app/tasks.py",
+  "ett_gns_app/cli.py",
+]

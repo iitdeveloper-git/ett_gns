@@ -1,0 +1,33 @@
+services:
+  api:
+    build: .
+    command: python run.py
+    env_file: .env
+    ports:
+      - "5001:5001"
+    depends_on:
+      - postgres
+      - redis
+
+  worker:
+    build: .
+    command: celery -A ett_gns_app.workers.celery_app worker -l info
+    env_file: .env
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: gns
+      POSTGRES_PASSWORD: gns
+      POSTGRES_DB: gns
+    volumes:
+      - gns_pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+
+volumes:
+  gns_pgdata:

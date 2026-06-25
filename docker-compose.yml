@@ -1,14 +1,113 @@
+x-backend: &backend
+  build:
+    context: .
+    target: runtime
+  env_file: [.env]
+  environment:
+    GNS_DATABASE_URL: postgresql+psycopg://gns:gns@postgres:5432/gns
+    GNS_BROKER_URL: amqp://gns:gns@rabbitmq:5672//
+    GNS_RESULT_BACKEND_URL: redis://redis:6379/0
+    GNS_ENVIRONMENT: development
+    GNS_ALLOW_DEV_IDENTITY: "true"
+    GNS_API_KEY_PEPPER: ${GNS_API_KEY_PEPPER:-local-development-pepper}
+    GNS_PROVIDER_SECRET_KEY: ${GNS_PROVIDER_SECRET_KEY:-local-development-provider-key}
+  depends_on:
+    postgres: {condition: service_healthy}
+    rabbitmq: {condition: service_healthy}
+    redis: {condition: service_healthy}
+  restart: unless-stopped
+
 services:
-  ett_gns_service:
-    build: .
-    container_name: ett_gns
-    restart: unless-stopped
-    ports:
-      - "${PORT:-5000}:5000"
-    env_file:
-      - .env
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: gns
+      POSTGRES_USER: gns
+      POSTGRES_PASSWORD: gns
+    volumes: [gns-postgres:/var/lib/postgresql/data]
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
-      interval: 30s
+      test: ["CMD-SHELL", "pg_isready -U gns -d gns"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: gns
+      RABBITMQ_DEFAULT_PASS: gns
+    ports: ["15672:15672"]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
       timeout: 5s
-      retries: 3
+      retries: 20
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--save", "60", "1", "--appendonly", "yes"]
+    volumes: [gns-redis:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports: ["1025:1025", "8025:8025"]
+
+  migrate:
+    <<: *backend
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+
+  api:
+    <<: *backend
+    command: ["uvicorn", "ett_gns_app.main:app", "--host", "0.0.0.0", "--port", "5000", "--proxy-headers"]
+    ports: ["5000:5000"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      postgres: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health/ready')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  outbox:
+    <<: *backend
+    command: ["python", "-m", "ett_gns_app.cli", "outbox"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      rabbitmq: {condition: service_healthy}
+
+  worker:
+    <<: *backend
+    command: ["celery", "-A", "ett_gns_app.tasks.celery_app", "worker", "--loglevel=INFO", "--queues=notifications.default", "--concurrency=4"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      rabbitmq: {condition: service_healthy}
+
+  scheduler:
+    <<: *backend
+    command: ["celery", "-A", "ett_gns_app.tasks.celery_app", "beat", "--loglevel=INFO"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      rabbitmq: {condition: service_healthy}
+
+  admin:
+    build:
+      context: ./admin
+    environment:
+      NEXT_PUBLIC_GNS_API_URL: http://localhost:5000
+    ports: ["3000:3000"]
+    depends_on:
+      api: {condition: service_healthy}
+    restart: unless-stopped
+
+volumes:
+  gns-postgres:
+  gns-redis:

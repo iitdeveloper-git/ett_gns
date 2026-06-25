@@ -1,83 +1,55 @@
-from flask import Flask, jsonify
-from ett_gns_app.gns_routes import register_blueprints
-from ett_gns_app.utils.helpers.logger import setup_logger
-from ett_gns_app.config import load_config
-from ett_gns_app.gns_controller import GnsController
-from ett_gns_app.limit import limiter
-from flasgger import Swagger
-import logging
+"""ETT Generic Notification Service.
 
-def create_app():
-    # Load configuration
+The production entry point is :mod:`ett_gns_app.main`. ``create_legacy_app`` keeps
+the historical Flask prototype importable during the migration without making
+Flask a prerequisite for the FastAPI application.
+"""
+
+from typing import Any
+
+
+def create_legacy_app() -> Any:
+    from flask import Flask, jsonify
+    from flasgger import Swagger
+
+    from ett_gns_app.config import load_config
+    from ett_gns_app.gns_controller import GnsController
+    from ett_gns_app.gns_routes import register_blueprints
+    from ett_gns_app.limit import limiter
+    from ett_gns_app.utils.helpers.logger import setup_logger
+
     config = load_config()
-
     app = Flask(__name__)
-    
-    # Store config
-    app.config['GNS_CONFIG'] = config
-
-    # Set up logging
-    logger = setup_logger()
-    flask_logger = logging.getLogger('flask')
-    flask_logger.handlers = logger.handlers
-    flask_logger.setLevel(logger.level)
-    
-    # Initialize Rate Limiter
+    app.config["GNS_CONFIG"] = config
+    setup_logger()
     limiter.init_app(app)
-
-    # Initialize Controller and attach to extensions
-    if not hasattr(app, 'extensions'):
-        app.extensions = {}
-    app.extensions['gns_controller'] = GnsController(config)
-    
-    # Register blueprints
+    app.extensions["gns_controller"] = GnsController(config)
     register_blueprints(app)
+    Swagger(
+        app,
+        config={
+            "headers": [],
+            "specs": [
+                {
+                    "endpoint": "apispec",
+                    "route": "/apispec.json",
+                    "rule_filter": lambda rule: True,
+                    "model_filter": lambda tag: True,
+                }
+            ],
+            "static_url_path": "/flasgger_static",
+            "swagger_ui": True,
+            "specs_route": "/docs",
+        },
+        template={"info": {"title": "ETT GNS Legacy API", "version": "1.0.0"}},
+    )
 
-    # Swagger / API docs configuration
-    swagger_config = {
-        "headers": [],
-        "specs": [
-            {
-                "endpoint": "apispec",
-                "route": "/apispec.json",
-                "rule_filter": lambda rule: True,
-                "model_filter": lambda tag: True,
-            }
-        ],
-        "static_url_path": "/flasgger_static",
-        "swagger_ui": True,
-        "specs_route": "/docs",
-    }
-
-    swagger_template = {
-        "info": {
-            "title": "ETT GNS API",
-            "description": "ETT Generic Notification Service - API Documentation",
-            "version": "1.0.0",
-        }
-    }
-
-    Swagger(app, config=swagger_config, template=swagger_template)
-
-    # Error handlers
     @app.errorhandler(404)
-    def not_found(e):
-        logger.warning("404 error: %s", e)
-        return jsonify({"error": "Not Found", "message": "The requested resource could not be found."}), 404
-
-    @app.errorhandler(405)
-    def method_not_allowed(e):
-        logger.warning("405 error: %s", e)
-        return jsonify({"error": "Method Not Allowed", "message": "The method is not allowed for the requested URL."}), 405
-
-    @app.errorhandler(429)
-    def ratelimit_handler(e):
-        logger.warning("429 error: Too many requests")
-        return jsonify({"error": "Too Many Requests", "message": str(e.description)}), 429
-
-    @app.errorhandler(Exception)
-    def handle_exception(e):
-        logger.error("An unexpected error occurred: %s", str(e))
-        return jsonify({"error": "Internal Server Error", "message": "An unexpected error occurred."}), 500
+    def not_found(error: Exception):
+        return jsonify({"error": "Not Found", "message": str(error)}), 404
 
     return app
+
+
+# Backward-compatible name for callers that explicitly use the Flask prototype.
+create_app = create_legacy_app

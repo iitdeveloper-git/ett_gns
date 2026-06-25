@@ -1,0 +1,29 @@
+name: Deploy production
+
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: Immutable image tag or release identifier
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate production approval inputs
+        env:
+          PRODUCTION_DEPLOY_HOOK: ${{ secrets.PRODUCTION_DEPLOY_HOOK }}
+        run: |
+          test -n "${{ inputs.release }}"
+          test -n "$PRODUCTION_DEPLOY_HOOK"
+      - name: Trigger approval-controlled deployment
+        env:
+          PRODUCTION_DEPLOY_HOOK: ${{ secrets.PRODUCTION_DEPLOY_HOOK }}
+        run: curl --fail-with-body --retry 3 -X POST "$PRODUCTION_DEPLOY_HOOK?release=${{ inputs.release }}"

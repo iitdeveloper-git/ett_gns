@@ -1,146 +1,53 @@
-# ETT Generic Notification Service (GNS)
+# ETT Generic Notification Service
 
-A highly scalable, asynchronous, and pluggable microservice built in Python (Flask) for routing generic multi-channel notifications (Emails, SMS, Webhooks). Designed for containerized deployments with automatic template discovery and strict rate-limiting.
+GNS is a multi-tenant notification platform for applications that register events, publish versioned templates, select verified providers, and submit durable asynchronous notifications through one runtime API.
 
-## 🚀 Features
+## Implemented
 
-- **Asynchronous Processing**: Integrated `ThreadPoolExecutor` ensures that API requests return immediately (within ~10ms) while I/O heavy tasks (like SMTP connections) run safely in the background.
-- **Auto-Discovering Templates**: Uses Jinja2's AST to automatically parse HTML files dropped into the `templates/` folder. It detects missing variables dynamically—no hardcoding required.
-- **Pluggable Channels**: Implements a standard Abstract Base Class (`NotificationChannel`), enabling effortless addition of SMS, WhatsApp, or Push notification strategies.
-- **Automatic Retry & Backoff**: Email routines feature robust exponential backoff (retrying 3 times) to guarantee delivery against network hiccups.
-- **Enterprise Rate-Limiting**: Powered by `flask-limiter` blocking volumetric spam to active endpoints.
-- **Fully White-labeled**: Templates are driven gracefully via runtime payload configuration (Company Name, Action URLs, etc.).
-- **Production-Ready**: Hosted securely under an unprivileged `appuser` utilizing `gunicorn` with horizontal thread scaling capabilities instead of standard WSGI.
+- FastAPI management and runtime APIs with OpenAPI
+- Tenant/application lifecycle and tenant isolation
+- Hashed application API keys with one-time reveal, expiry, overlap rotation, revocation and last-used tracking
+- Development identity mode plus production OIDC verification boundary and role permissions
+- Versioned JSON Schemas with compatibility checks
+- Sandboxed templates with validation, preview, test send, immutable publication, rollback, locale and variant resolution
+- Encrypted provider secrets, health, activation, app/default selection and sender-integrity rules
+- SMTP, signed webhook, Twilio-compatible SMS, FCM-compatible push, Telegram Bot and Meta WhatsApp adapter boundaries
+- Durable notification/idempotency/outbox records, scheduling fields, cancellation, worker leases, retries, DLQ and reconciliation
+- Signed, replay-safe, idempotent provider callbacks and normalized delivery events
+- Quotas, usage buckets, audit events, structured logs, Prometheus metrics and OpenTelemetry spans
+- Connected Next.js admin console
+- Alembic migrations, Compose topology, Render deployment blueprint and CI/CD workflows
 
----
+Live delivery remains dependent on provider credentials. Docker Compose and staging deployment are not claimed as verified in the current environment because Docker and a staging target are unavailable.
 
-## 🏗 System Architecture
-
-The overarching system utilizes a standard Factory Pattern initialization mapping into multiple worker modules. 
-
-```text
-client 
-  -> [ Gunicorn WSGI ] 
-       -> [ Rate Limiter ]
-          -> /send_notification (HTTP 202 Accepted)
-             -> [ Thread Pool ] (Background Async)
-                  -> NotificationChannel Router
-                       -> EmailChannel (Validates Template -> Retries -> Connects SMTP)
-                       -> SmsChannel (Stubbed for extension)
-                       -> WebhookChannel (Stubbed for extension)
-```
-
----
-
-## 🛠 Prerequisites & Setup
-
-Ensure you have **Podman** (or Docker) installed before proceeding.
-
-### 1. Environment Variables
-Create a `.env` file in the root directory (you can copy `sample.env` if present) with the following structure:
-
-```ini
-PORT=5000
-FLASK_ENV=production
-
-# Email SMTP Credentials
-SMTP_SERVER=smtp.example.com
-SMTP_PORT=465
-SMTP_AUTH_IDENT=your-email@example.com
-SMTP_AUTH_PASSWORD=your_secure_password
-SMTP_AUTH_NAME=YourCompany Name
-```
-
-### 2. Building & Running the Container
-The service is containerized securely out of the box using `docker-compose`. 
+## Quick start
 
 ```bash
-# Build the images and start the container in detached mode
-podman compose up -d --build
-
-# View real-time container logs (useful for SMTP debugging)
-podman logs -f ett_gns
+cp sample.env .env
+python3 -m pip install -r requirements-dev.txt
+alembic upgrade head
+uvicorn ett_gns_app.main:app --reload --port 5000
 ```
 
-The application will start hosting gracefully on `http://localhost:5000` (or whichever port mapping you established).
+In another terminal:
 
----
-
-## 📡 API Reference
-
-### 1. Healthcheck
-Used for load balancers and container health checks.
-```http
-GET /health
-```
-**Response:** `200 OK`
-```json
-{
-    "status": "healthy"
-}
+```bash
+cd admin
+npm ci
+npm run dev
 ```
 
-### 2. View Available Channels
-```http
-GET /channels
-```
-**Response:** `200 OK`
-```json
-{
-    "channels": ["email", "sms", "webhook"]
-}
-```
+Open `http://localhost:3000`. Development admin requests use the safe local identity headers built into the console. Production rejects development identity mode.
 
-### 3. Send Notification
-Enqueues or synchronously delivers a message using the requested channel.
-*Note: This route is strictly rate-limited at 10 requests per minute by default.*
+## Verification
 
-```http
-POST /send_notification
-Content-Type: application/json
-```
-**Payload Body:**
-```json
-{
-    "channel_name": "email",
-    "recipient": "user@example.com",
-    "subject": "Securing Your Account",
-    "template_name": "password_reset.html",
-    "sync": false,
-    "data": {
-        "user_name": "John Doe",
-        "company_name": "Acme Corp",
-        "reset_link": "https://dashboard.acmecorp.com/reset"
-    }
-}
+```bash
+ruff format --check .
+ruff check .
+mypy ett_gns_app
+pytest --cov=ett_gns_app --cov-fail-under=75
+alembic check
+cd admin && npm run lint && npm run typecheck && npm test && npm run build
 ```
 
-**Payload Options:**
-- `sync` *(boolean, default: true)*: If `false`, the API queues the notification and returns a `202 Accepted` immediately. If `true`, the API blocks the request until the channel effectively delivers the message and returns a `200 OK`. 
-
-**Responses:**
-- `200 OK`: Message delivered perfectly (when `sync: true`).
-- `202 Accepted`: Job queued seamlessly (when `sync: false`).
-- `400 Bad Request`: Validation error, missing keys, or upstream failure (like SMTP auth failure) when attempting synchronous execution.
-- `429 Too Many Requests`: Client surpassed the rate limiter ceiling.
-
----
-
-## 🎨 Managing Templates
-
-GNS heavily implements **Auto-Discovery**. To add a new email template:
-1. Drop your `new_feature.html` file into the `/templates` folder.
-2. Inside your HTML, mark dynamic variables with standard Jinja brackets: `{{ signature_name }}`.
-3. **No code changes are needed!** GNS will instantly realize that `new_feature.html` requires `signature_name` and will begin validating incoming API payload `data` objects against it immediately. 
-
----
-
-## 🔌 Extending Channels (e.g. SMS)
-
-GNS adheres to the **Open-Closed Principle (SOLID)**. 
-
-To add an SMS provider (like Twilio, AWS SNS):
-1. Open `ett_gns_app/channels/sms_channel.py`.
-2. Find the stubbed `def send(...)` function in the `SmsChannel` class.
-3. Replace the `NotImplementedError` with your provider API execution code.
-4. Restart the container. GNS automatically loops it into the `/channels` directory and route endpoints.
+See [docs/local-development.md](docs/local-development.md), [docs/api.md](docs/api.md), and [docs/deployment.md](docs/deployment.md).

@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>We Received Your Enquiry</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #07111f;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #e8eef7;
+        }
+
+        table {
+            border-spacing: 0;
+            border-collapse: collapse;
+        }
+
+        img {
+            display: block;
+            max-width: 100%;
+            border: 0;
+        }
+
+        a {
+            color: #1fa2ff;
+        }
+
+        .email-wrapper {
+            width: 100%;
+            background-color: #07111f;
+            padding: 32px 12px;
+        }
+
+        .email-container {
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto;
+            background-color: #0c1a2b;
+            border: 1px solid #17324f;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .header {
+            padding: 36px 40px;
+            text-align: center;
+            background-color: #0b1727;
+            border-bottom: 1px solid #17324f;
+        }
+
+        .brand {
+            margin: 0 0 12px;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #1fa2ff;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 30px;
+            line-height: 1.25;
+            color: #ffffff;
+        }
+
+        .header p {
+            margin: 14px 0 0;
+            font-size: 16px;
+            line-height: 1.6;
+            color: #aebccd;
+        }
+
+        .content {
+            padding: 36px 40px;
+        }
+
+        .content h2 {
+            margin: 0 0 16px;
+            font-size: 23px;
+            line-height: 1.35;
+            color: #ffffff;
+        }
+
+        .content p {
+            margin: 0 0 18px;
+            font-size: 15px;
+            line-height: 1.7;
+            color: #c1cddd;
+        }
+
+        .success-box {
+            margin: 24px 0;
+            padding: 20px;
+            background-color: #0d2740;
+            border: 1px solid #1b4c75;
+            border-left: 4px solid #1fa2ff;
+            border-radius: 10px;
+        }
+
+        .success-box p {
+            margin: 0;
+            color: #d8e8f7;
+        }
+
+        .reference-box {
+            margin: 24px 0;
+            padding: 16px 20px;
+            background-color: #091522;
+            border: 1px solid #17324f;
+            border-radius: 10px;
+        }
+
+        .reference-label {
+            margin: 0 0 6px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #8193a8;
+        }
+
+        .reference-value {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .summary-title {
+            margin: 30px 0 14px;
+            font-size: 18px;
+            color: #ffffff;
+        }
+
+        .summary-table {
+            width: 100%;
+            background-color: #091522;
+            border: 1px solid #17324f;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .summary-table td {
+            padding: 13px 16px;
+            border-bottom: 1px solid #17324f;
+            font-size: 14px;
+            line-height: 1.5;
+            vertical-align: top;
+        }
+
+        .summary-table tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .summary-label {
+            width: 34%;
+            font-weight: 700;
+            color: #8fa2b7;
+        }
+
+        .summary-value {
+            color: #e8eef7;
+            word-break: break-word;
+        }
+
+        .message-box {
+            margin: 14px 0 28px;
+            padding: 18px;
+            background-color: #091522;
+            border: 1px solid #17324f;
+            border-radius: 10px;
+            color: #d5dfeb;
+            font-size: 14px;
+            line-height: 1.7;
+            white-space: pre-line;
+        }
+
+        .button-container {
+            padding: 8px 0 28px;
+            text-align: center;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 14px 28px;
+            background-color: #1fa2ff;
+            border-radius: 8px;
+            color: #ffffff !important;
+            font-size: 15px;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .signature {
+            margin-top: 18px;
+            padding-top: 24px;
+            border-top: 1px solid #17324f;
+            font-size: 15px;
+            line-height: 1.7;
+            color: #c1cddd;
+        }
+
+        .signature strong {
+            color: #ffffff;
+        }
+
+        .footer {
+            padding: 26px 40px;
+            text-align: center;
+            background-color: #08131f;
+            border-top: 1px solid #17324f;
+        }
+
+        .footer p {
+            margin: 5px 0;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #73869a;
+        }
+
+        .footer a {
+            color: #1fa2ff;
+            text-decoration: none;
+        }
+
+        @media screen and (max-width: 600px) {
+            .email-wrapper {
+                padding: 16px 8px;
+            }
+
+            .header,
+            .content,
+            .footer {
+                padding-left: 22px;
+                padding-right: 22px;
+            }
+
+            .header h1 {
+                font-size: 25px;
+            }
+
+            .summary-label,
+            .summary-value {
+                display: block;
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            .summary-label {
+                padding-bottom: 4px !important;
+                border-bottom: 0 !important;
+            }
+
+            .summary-value {
+                padding-top: 0 !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <table
+        role="presentation"
+        width="100%"
+        class="email-wrapper"
+        cellpadding="0"
+        cellspacing="0"
+        border="0"
+    >
+        <tr>
+            <td align="center">
+
+                <table
+                    role="presentation"
+                    width="100%"
+                    class="email-container"
+                    cellpadding="0"
+                    cellspacing="0"
+                    border="0"
+                >
+
+                    <!-- Header -->
+                    <tr>
+                        <td class="header">
+                            <p class="brand">IIT Developer</p>
+                            <h1>Thank you for reaching out</h1>
+                            <p>
+                                We have received your enquiry and our team will review
+                                your requirements shortly.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Content -->
+                    <tr>
+                        <td class="content">
+
+                            <h2>Hello {{ user_name }},</h2>
+
+                            <p>
+                                Thank you for contacting IIT Developer. We appreciate
+                                the opportunity to learn about your project.
+                            </p>
+
+                            <div class="success-box">
+                                <p>
+                                    <strong>Your enquiry has been successfully received.</strong>
+                                    Our team normally responds within four business hours.
+                                </p>
+                            </div>
+
+                            <div class="reference-box">
+                                <p class="reference-label">Enquiry reference</p>
+                                <p class="reference-value">{{ reference_id }}</p>
+                            </div>
+
+                            <h3 class="summary-title">Your enquiry summary</h3>
+
+                            <table
+                                role="presentation"
+                                width="100%"
+                                class="summary-table"
+                                cellpadding="0"
+                                cellspacing="0"
+                                border="0"
+                            >
+                                <tr>
+                                    <td class="summary-label">Name</td>
+                                    <td class="summary-value">{{ user_name }}</td>
+                                </tr>
+
+                                <tr>
+                                    <td class="summary-label">Email</td>
+                                    <td class="summary-value">{{ user_email }}</td>
+                                </tr>
+
+                                <tr>
+                                    <td class="summary-label">Phone</td>
+                                    <td class="summary-value">{{ phone_number }}</td>
+                                </tr>
+
+                                <tr>
+                                    <td class="summary-label">Company</td>
+                                    <td class="summary-value">{{ company_name }}</td>
+                                </tr>
+
+                                <tr>
+                                    <td class="summary-label">Service</td>
+                                    <td class="summary-value">{{ service_interest }}</td>
+                                </tr>
+
+                                <tr>
+                                    <td class="summary-label">Budget</td>
+                                    <td class="summary-value">{{ budget_range }}</td>
+                                </tr>
+
+                                <tr>
+                                    <td class="summary-label">Submitted</td>
+                                    <td class="summary-value">{{ submitted_at }}</td>
+                                </tr>
+                            </table>
+
+                            <h3 class="summary-title">Project details</h3>
+
+                            <div class="message-box">{{ project_message }}</div>
+
+                            <p>
+                                A member of our team will contact you using the email
+                                address or phone number provided in your enquiry.
+                            </p>
+
+                            <p>
+                                You may also reply directly to this email if you want
+                                to add more information, documents, links, or project
+                                requirements.
+                            </p>
+
+                            <div class="button-container">
+                                <a href="{{ website_url }}" class="button">
+                                    Visit IIT Developer
+                                </a>
+                            </div>
+
+                            <div class="signature">
+                                Best regards,<br />
+                                <strong>IIT Developer Team</strong><br />
+                                <a href="mailto:{{ support_email }}">
+                                    {{ support_email }}
+                                </a><br />
+                                {{ support_phone }}
+                            </div>
+
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td class="footer">
+                            <p>
+                                © IIT Developer. All rights reserved.
+                            </p>
+
+                            <p>
+                                This automated confirmation was sent because an enquiry
+                                was submitted through
+                                <a href="{{ website_url }}">{{ website_url }}</a>.
+                            </p>
+
+                            <p>
+                                Please do not share your enquiry reference publicly.
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

@@ -3,6 +3,7 @@ from ett_gns_app.channels.base import NotificationChannel
 
 logger = logging.getLogger(__name__)
 
+
 class SmsChannel(NotificationChannel):
     def __init__(self, config=None):
         pass

@@ -12,7 +12,8 @@ from ett_gns_app.config import AppConfig
 logger = logging.getLogger(__name__)
 
 # Valid email regex for recipient validation
-EMAIL_REGEX = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+EMAIL_REGEX = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
+
 
 class EmailChannel(NotificationChannel):
     def __init__(self, config: AppConfig):
@@ -36,7 +37,7 @@ class EmailChannel(NotificationChannel):
         if not self.validate(recipient):
             logger.error(f"Invalid email address: {recipient}")
             raise ValueError(f"Invalid email address: {recipient}")
-            
+
         logger.info(f"Validating template: {template_name}")
         self.template_helper.validate_template(template_name, data)
 
@@ -44,10 +45,10 @@ class EmailChannel(NotificationChannel):
         html_content = self.template_helper.render_template(template_name, data)
 
         message = MIMEMultipart()
-        message['From'] = self.from_email
-        message['To'] = recipient
-        message['Subject'] = subject
-        message.attach(MIMEText(html_content, 'html'))
+        message["From"] = self.from_email
+        message["To"] = recipient
+        message["Subject"] = subject
+        message.attach(MIMEText(html_content, "html"))
 
         # Retry logic with exponential backoff
         max_retries = 3
@@ -63,8 +64,10 @@ class EmailChannel(NotificationChannel):
             except smtplib.SMTPException as e:
                 logger.error(f"SMTP error on attempt {attempt + 1}: {str(e)}")
                 if attempt == max_retries - 1:
-                    raise ValueError(f"Failed to send email after {max_retries} attempts. Error: {str(e)}")
-                time.sleep(2 ** attempt)  # Backoff: 1s, 2s, 4s
+                    raise ValueError(
+                        f"Failed to send email after {max_retries} attempts. Error: {str(e)}"
+                    )
+                time.sleep(2**attempt)  # Backoff: 1s, 2s, 4s
             except Exception as e:
                 logger.error(f"Unexpected error sending email: {str(e)}")
                 raise ValueError(f"Failed to send email. Error: {str(e)}")
