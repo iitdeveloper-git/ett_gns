@@ -195,9 +195,84 @@ def test_provider_secrets_are_masked_verified_and_activation_gated(
     tested = client.post(f"/api/v1/providers/{provider['id']}/test", headers=headers)
     assert tested.status_code == 200
     assert tested.json()["valid"] is True
+    assert tested.json()["health_status"] == "healthy"
     activated = client.post(f"/api/v1/providers/{provider['id']}/activate", headers=headers)
     assert activated.status_code == 200
     assert activated.json()["active"] is True
     listing = client.get(f"/api/v1/tenants/{tenant['id']}/providers", headers=headers)
     assert listing.status_code == 200
     assert "never-return-this" not in listing.text
+
+
+def test_provider_config_aliases_pre_save_test_secret_replace_default_and_archive(
+    client: TestClient, platform_headers: dict[str, str]
+) -> None:
+    tenant, application, headers = provision_event(client, platform_headers)
+    pre_test = client.post(
+        "/api/v1/provider-configs/test-connection",
+        headers=headers,
+        json={
+            "tenant_id": tenant["id"],
+            "application_id": application["id"],
+            "channel": "email",
+            "provider_type": "fake",
+            "public_config": {},
+            "secret_config": {"token": "pre-save-only"},
+        },
+    )
+    assert pre_test.status_code == 200, pre_test.text
+    assert pre_test.json()["valid"] is True
+    assert "pre-save-only" not in pre_test.text
+
+    created = client.post(
+        f"/api/v1/tenants/{tenant['id']}/providers",
+        headers=headers,
+        json={
+            "channel": "email",
+            "provider_type": "fake",
+            "name": "Tenant fake",
+            "public_config": {},
+            "secret_config": {"token": "write-only"},
+        },
+    )
+    assert created.status_code == 201, created.text
+    provider = created.json()
+    assert provider["health_status"] == "unknown"
+    read = client.get(f"/api/v1/provider-configs/{provider['id']}", headers=headers)
+    assert read.status_code == 200
+    assert read.json()["secret_configured"] is True
+    assert "write-only" not in read.text
+
+    replace = client.post(
+        f"/api/v1/provider-configs/{provider['id']}/replace-secret",
+        headers=headers,
+        json={"secret_config": {"token": "new-write-only"}},
+    )
+    assert replace.status_code == 200, replace.text
+    assert replace.json()["health_status"] == "unknown"
+    assert "new-write-only" not in replace.text
+
+    tested = client.post(f"/api/v1/provider-configs/{provider['id']}/test", headers=headers)
+    assert tested.status_code == 200
+    assert tested.json()["valid"] is True
+    activated = client.post(f"/api/v1/provider-configs/{provider['id']}/activate", headers=headers)
+    assert activated.status_code == 200
+    defaulted = client.post(
+        f"/api/v1/provider-configs/{provider['id']}/set-default", headers=headers
+    )
+    assert defaulted.status_code == 200
+    assert defaulted.json()["is_default"] is True
+    deactivate = client.post(
+        f"/api/v1/provider-configs/{provider['id']}/deactivate", headers=headers
+    )
+    assert deactivate.status_code == 200
+    blocked_archive = client.delete(f"/api/v1/provider-configs/{provider['id']}", headers=headers)
+    assert blocked_archive.status_code == 409
+    unset = client.post(f"/api/v1/provider-configs/{provider['id']}/unset-default", headers=headers)
+    assert unset.status_code == 200
+    archived = client.delete(f"/api/v1/provider-configs/{provider['id']}", headers=headers)
+    assert archived.status_code == 204
+    archived_read = client.get(f"/api/v1/provider-configs/{provider['id']}", headers=headers)
+    assert archived_read.status_code == 200
+    assert archived_read.json()["health_status"] == "archived"
+    assert archived_read.json()["secret_configured"] is False

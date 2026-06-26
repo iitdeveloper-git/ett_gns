@@ -38,6 +38,9 @@ a { color: inherit; text-decoration: none; }
 .workspace-fields { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .workspace-fields label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
 .workspace-input { width: 220px; }
+.workspace-selector-wrap { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.workspace-select { display: grid; grid-template-columns: auto minmax(130px, 190px) minmax(150px, 220px) auto; align-items: center; gap: 6px; }
+.workspace-select input, .workspace-select select { min-height: 34px; padding-block: 7px; }
 .identity { display: flex; align-items: center; gap: 9px; color: var(--muted); white-space: nowrap; }
 .identity-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px rgba(102,217,183,.12); }
 
@@ -58,6 +61,10 @@ a { color: inherit; text-decoration: none; }
 .metric-label { color: var(--muted); font-size: 12px; }
 .metric-value { font-size: 27px; font-weight: 700; margin-top: 5px; letter-spacing: -.03em; }
 .metric-note { color: var(--muted); font-size: 11px; margin-top: 2px; }
+.onboarding-steps { display: grid; grid-template-columns: repeat(7, minmax(120px, 1fr)); gap: 1px; background: var(--border); overflow-x: auto; }
+.onboarding-step { min-height: 92px; display: grid; align-content: start; gap: 7px; background: var(--panel); padding: 14px; }
+.onboarding-step.done { background: linear-gradient(180deg, rgba(102,217,183,.08), var(--panel)); }
+.onboarding-step span:last-child { color: var(--muted); font-size: 12px; }
 
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
@@ -114,6 +121,7 @@ textarea { min-height: 110px; resize: vertical; font-family: "SFMono-Regular", C
   .nav-link { justify-content: center; }
   .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .two-col { grid-template-columns: 1fr; }
+  .onboarding-steps { grid-template-columns: repeat(4, minmax(140px, 1fr)); }
 }
 @media (max-width: 700px) {
   .app-shell { display: block; }
@@ -124,6 +132,8 @@ textarea { min-height: 110px; resize: vertical; font-family: "SFMono-Regular", C
   .topbar { padding: 9px 14px; }
   .workspace-fields label, .identity span { display: none; }
   .workspace-input { width: min(42vw, 180px); }
+  .workspace-selector-wrap { display: grid; gap: 8px; width: 100%; }
+  .workspace-select { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; }
   .page-header { display: block; }
   .page-header .toolbar { margin-top: 14px; }
   .metric-grid, .form-grid { grid-template-columns: 1fr; }

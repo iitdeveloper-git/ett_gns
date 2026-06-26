@@ -9,6 +9,7 @@ from uuid import uuid4
 from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 from kombu import Connection
 from opentelemetry import trace
@@ -45,6 +46,33 @@ app = FastAPI(
     version="0.2.0",
     description="Multi-tenant notification management and durable runtime API.",
 )
+
+
+def custom_openapi() -> dict[str, object]:
+    if app.openapi_schema:
+        return app.openapi_schema
+    schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
+    components = schema.setdefault("components", {})
+    security_schemes = components.setdefault("securitySchemes", {})
+    security_schemes["ApplicationBearer"] = {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "gns_<prefix>.<secret>",
+        "description": "Application credential shown once by the GNS Credentials screen.",
+    }
+    notifications = schema.get("paths", {}).get("/api/v1/notifications", {})
+    if "post" in notifications:
+        notifications["post"]["security"] = [{"ApplicationBearer": []}]
+    app.openapi_schema = schema
+    return app.openapi_schema
+
+
+app.openapi = custom_openapi  # type: ignore[method-assign]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,

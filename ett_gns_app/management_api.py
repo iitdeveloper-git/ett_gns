@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from datetime import UTC, datetime
 from typing import Any
 
@@ -16,7 +17,6 @@ from ett_gns_app.models import (
     Event,
     EventSchemaVersion,
     Lifecycle,
-    Notification,
     ProviderConfig,
     Template,
     TemplateState,
@@ -25,6 +25,7 @@ from ett_gns_app.models import (
 from ett_gns_app.resolution import ResolutionError, resolve_email_sender, resolve_provider
 from ett_gns_app.schemas import (
     Page,
+    ProviderConnectionTest,
     ProviderCreate,
     ProviderRead,
     ProviderSecretReplace,
@@ -53,6 +54,66 @@ SUPPORTED_PROVIDER_TYPES = {
     "telegram": {"telegram_bot", "fake"},
     "whatsapp": {"meta_cloud", "fake"},
 }
+PROVIDER_TEST_RATE: dict[str, list[float]] = {}
+PROVIDER_TEST_LIMIT = 60
+PROVIDER_TEST_WINDOW_SECONDS = 60
+
+
+def throttle_provider_test(principal: Principal, request: Request) -> None:
+    now = time.monotonic()
+    key = f"{principal.subject}:{request.client.host if request.client else 'unknown'}"
+    recent = [
+        stamp
+        for stamp in PROVIDER_TEST_RATE.get(key, [])
+        if now - stamp < PROVIDER_TEST_WINDOW_SECONDS
+    ]
+    if len(recent) >= PROVIDER_TEST_LIMIT:
+        fail(429, "provider_test_rate_limited", "Too many provider connection tests")
+    recent.append(now)
+    PROVIDER_TEST_RATE[key] = recent
+
+
+def normalize_provider_test_error(error: str) -> str:
+    upper = error.upper()
+    if "AUTH" in upper:
+        return "SMTP_AUTH_FAILED"
+    if "TLS" in upper or "SSL" in upper or "CERTIFICATE" in upper:
+        return "SMTP_TLS_FAILED"
+    if "TIMEOUT" in upper or "TIMED OUT" in upper:
+        return "SMTP_TIMEOUT"
+    if "DNS" in upper or "NAME OR SERVICE" in upper or "GETADDRINFO" in upper:
+        return "SMTP_DNS_FAILED"
+    if "SENDER" in upper or "FROM" in upper:
+        return "SMTP_SENDER_REJECTED"
+    if "SMTP_UNAVAILABLE" in upper or "CONNECTION" in upper or "REFUSED" in upper:
+        return "SMTP_CONNECTION_FAILED"
+    if "CONFIG" in upper or "MISSING" in upper or "UNSUPPORTED" in upper:
+        return "CONFIG_INVALID"
+    if "DECRYPT" in upper:
+        return "SECRET_DECRYPTION_FAILED"
+    return "SMTP_PROVIDER_ERROR"
+
+
+def execute_provider_test(
+    channel: str, provider_type: str, public_config: dict[str, Any], secret: dict[str, Any]
+) -> ProviderTestResult:
+    started = time.perf_counter()
+    errors = validate_provider(channel, provider_type, public_config, secret)
+    if not errors and provider_type == "smtp":
+        try:
+            SMTPAdapter().test_connection(public_config, secret)
+        except AdapterError as exc:
+            errors.append(f"{exc.code}: {exc}")
+    latency_ms = round((time.perf_counter() - started) * 1000)
+    error_code = normalize_provider_test_error(errors[0]) if errors else None
+    return ProviderTestResult(
+        valid=not errors,
+        health_status="healthy" if not errors else "invalid",
+        errors=errors,
+        error_code=error_code,
+        message="Connection test passed" if not errors else "Provider connection test failed",
+        latency_ms=latency_ms,
+    )
 
 
 def get_event_schema(db: Session, event: Event) -> dict[str, Any]:
@@ -594,7 +655,7 @@ def create_provider_record(
         is_default=body.is_default,
         fallback_policy=body.fallback_policy,
         fallback_provider_id=body.fallback_provider_id,
-        health_status="configured",
+        health_status="unknown",
     )
     db.add(provider)
     db.flush()
@@ -682,7 +743,60 @@ def get_provider(db: Session, provider_id: str, principal: Principal) -> Provide
     return provider
 
 
+@router.post("/provider-configs/test-connection", response_model=ProviderTestResult)
+def test_provider_connection(
+    body: ProviderConnectionTest,
+    request: Request,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(require("providers:manage")),
+) -> ProviderTestResult:
+    throttle_provider_test(principal, request)
+    if body.application_id:
+        app = get_application(db, body.application_id, principal)
+        if body.tenant_id and app.tenant_id != body.tenant_id:
+            fail(403, "application_scope_mismatch", "Application does not belong to tenant")
+    elif body.tenant_id:
+        ensure_tenant(principal, body.tenant_id)
+    elif "*" not in principal.permissions and not principal.tenant_id:
+        fail(403, "tenant_scope_required", "Tenant scope is required")
+    result = execute_provider_test(
+        body.channel, body.provider_type, body.public_config, body.secret_config
+    )
+    audit(
+        db,
+        principal,
+        "provider.connection_tested",
+        "provider_config",
+        "pre_save",
+        request.state.request_id,
+        {
+            "channel": body.channel,
+            "provider_type": body.provider_type,
+            "valid": result.valid,
+            "error_code": result.error_code,
+            "secret_supplied": bool(body.secret_config),
+        },
+        body.tenant_id or principal.tenant_id,
+    )
+    db.commit()
+    return result
+
+
+@router.get("/providers/{provider_id}", response_model=ProviderRead)
+@router.get("/provider-configs/{provider_id}", response_model=ProviderRead)
+def read_provider(
+    provider_id: str,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(require("apps:read")),
+) -> ProviderRead:
+    provider = get_provider(db, provider_id, principal)
+    read = ProviderRead.model_validate(provider)
+    read.secret_configured = provider.secret_ciphertext is not None
+    return read
+
+
 @router.patch("/providers/{provider_id}", response_model=ProviderRead)
+@router.patch("/provider-configs/{provider_id}", response_model=ProviderRead)
 def update_provider(
     provider_id: str,
     body: ProviderUpdate,
@@ -721,7 +835,7 @@ def update_provider(
         )
     for key, value in changes.items():
         setattr(provider, key, value)
-    provider.health_status = "configured"
+    provider.health_status = "unknown"
     provider.verified_at = None
     audit(
         db,
@@ -740,6 +854,7 @@ def update_provider(
 
 
 @router.put("/providers/{provider_id}/secret", response_model=ProviderRead)
+@router.post("/provider-configs/{provider_id}/replace-secret", response_model=ProviderRead)
 def replace_provider_secret(
     provider_id: str,
     body: ProviderSecretReplace,
@@ -756,7 +871,7 @@ def replace_provider_secret(
         fail(422, "provider_config_invalid", "; ".join(errors))
     provider.secret_ciphertext = SecretStore(settings).encrypt(body.secret)
     provider.secret_key_id = "local-fernet-v1"  # noqa: S105 - key identifier, not a secret
-    provider.health_status = "configured"
+    provider.health_status = "unknown"
     provider.verified_at = None
     audit(
         db,
@@ -774,36 +889,54 @@ def replace_provider_secret(
 
 
 @router.post("/providers/{provider_id}/test", response_model=ProviderTestResult)
+@router.post("/provider-configs/{provider_id}/test", response_model=ProviderTestResult)
 def test_provider(
     provider_id: str,
+    request: Request,
     db: Session = Depends(get_db),
     principal: Principal = Depends(require("providers:manage")),
     settings: Settings = Depends(get_settings),
 ) -> ProviderTestResult:
+    throttle_provider_test(principal, request)
     provider = get_provider(db, provider_id, principal)
-    secret = SecretStore(settings).decrypt(provider.secret_ciphertext)
-    errors = validate_provider(
-        provider.channel, provider.provider_type, provider.public_config, secret
+    try:
+        secret = SecretStore(settings).decrypt(provider.secret_ciphertext)
+    except ValueError:
+        result = ProviderTestResult(
+            valid=False,
+            health_status="invalid",
+            errors=["SECRET_DECRYPTION_FAILED"],
+            error_code="SECRET_DECRYPTION_FAILED",
+            message="Provider secret cannot be decrypted",
+            latency_ms=0,
+        )
+    else:
+        result = execute_provider_test(
+            provider.channel, provider.provider_type, provider.public_config, secret
+        )
+    provider.health_status = result.health_status
+    provider.verified_at = datetime.now(UTC) if result.valid else None
+    provider.last_error_code = result.error_code
+    audit(
+        db,
+        principal,
+        "provider.tested",
+        "provider",
+        provider.id,
+        request.state.request_id,
+        {"valid": result.valid, "error_code": result.error_code},
+        tenant_id=provider.tenant_id,
     )
-    if not errors and provider.provider_type == "smtp":
-        try:
-            SMTPAdapter().test_connection(provider.public_config, secret)
-        except AdapterError as exc:
-            errors.append(f"{exc.code}: {exc}")
-    provider.health_status = "healthy" if not errors else "invalid"
-    provider.verified_at = datetime.now(UTC) if not errors else None
-    provider.last_error_code = None if not errors else "CONFIG_INVALID"
     db.commit()
-    return ProviderTestResult(valid=not errors, health_status=provider.health_status, errors=errors)
+    return result
 
 
-@router.post("/providers/{provider_id}/{action}", response_model=ProviderRead)
-def transition_provider(
+def apply_provider_transition(
     provider_id: str,
     action: str,
     request: Request,
-    db: Session = Depends(get_db),
-    principal: Principal = Depends(require("providers:manage")),
+    db: Session,
+    principal: Principal,
 ) -> ProviderRead:
     if action not in {"activate", "deactivate"}:
         fail(404, "not_found", "Action not found")
@@ -826,7 +959,101 @@ def transition_provider(
     return read
 
 
+@router.post("/providers/{provider_id}/{action}", response_model=ProviderRead)
+def transition_provider(
+    provider_id: str,
+    action: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(require("providers:manage")),
+) -> ProviderRead:
+    return apply_provider_transition(provider_id, action, request, db, principal)
+
+
+@router.post("/provider-configs/{provider_id}/activate", response_model=ProviderRead)
+def activate_provider_config(
+    provider_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(require("providers:manage")),
+) -> ProviderRead:
+    return apply_provider_transition(provider_id, "activate", request, db, principal)
+
+
+@router.post("/provider-configs/{provider_id}/deactivate", response_model=ProviderRead)
+def deactivate_provider_config(
+    provider_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(require("providers:manage")),
+) -> ProviderRead:
+    return apply_provider_transition(provider_id, "deactivate", request, db, principal)
+
+
+@router.post("/provider-configs/{provider_id}/set-default", response_model=ProviderRead)
+def set_default_provider(
+    provider_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(require("providers:manage")),
+) -> ProviderRead:
+    provider = get_provider(db, provider_id, principal)
+    if provider.application_id is not None:
+        fail(422, "invalid_default_scope", "Only tenant providers can be defaults")
+    if not provider.active or provider.health_status != "healthy":
+        fail(409, "provider_not_healthy", "Default provider must be active and healthy")
+    for existing in db.scalars(
+        select(ProviderConfig).where(
+            ProviderConfig.tenant_id == provider.tenant_id,
+            ProviderConfig.application_id.is_(None),
+            ProviderConfig.channel == provider.channel,
+            ProviderConfig.is_default.is_(True),
+            ProviderConfig.id != provider.id,
+        )
+    ):
+        existing.is_default = False
+    provider.is_default = True
+    audit(
+        db,
+        principal,
+        "provider.default_set",
+        "provider",
+        provider.id,
+        request.state.request_id,
+        tenant_id=provider.tenant_id,
+    )
+    db.commit()
+    read = ProviderRead.model_validate(provider)
+    read.secret_configured = provider.secret_ciphertext is not None
+    return read
+
+
+@router.post("/provider-configs/{provider_id}/unset-default", response_model=ProviderRead)
+def unset_default_provider(
+    provider_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(require("providers:manage")),
+) -> ProviderRead:
+    provider = get_provider(db, provider_id, principal)
+    provider.is_default = False
+    audit(
+        db,
+        principal,
+        "provider.default_unset",
+        "provider",
+        provider.id,
+        request.state.request_id,
+        tenant_id=provider.tenant_id,
+    )
+    db.commit()
+    read = ProviderRead.model_validate(provider)
+    read.secret_configured = provider.secret_ciphertext is not None
+    return read
+
+
 @router.delete("/providers/{provider_id}", status_code=204)
+@router.delete("/provider-configs/{provider_id}", status_code=204)
 def delete_provider(
     provider_id: str,
     request: Request,
@@ -834,23 +1061,26 @@ def delete_provider(
     principal: Principal = Depends(require("providers:manage")),
 ) -> None:
     provider = get_provider(db, provider_id, principal)
-    referenced = db.scalar(
-        select(func.count())
-        .select_from(Notification)
-        .where(Notification.provider_config_id == provider.id)
-    )
-    if referenced:
-        fail(409, "provider_in_use", "Provider is referenced by notification snapshots")
     if provider.active:
         fail(409, "provider_active", "Deactivate provider before deletion")
+    if provider.is_default:
+        fail(409, "provider_default", "Unset or replace default provider before archive")
+    for dependent in db.scalars(
+        select(ProviderConfig).where(ProviderConfig.fallback_provider_id == provider.id)
+    ):
+        dependent.fallback_provider_id = None
+        if dependent.fallback_policy == "explicit_failover":
+            dependent.fallback_policy = "none"
+    provider.health_status = "archived"
+    provider.secret_ciphertext = None
+    provider.secret_key_id = None
     audit(
         db,
         principal,
-        "provider.deleted",
+        "provider.archived",
         "provider",
         provider.id,
         request.state.request_id,
         tenant_id=provider.tenant_id,
     )
-    db.delete(provider)
     db.commit()

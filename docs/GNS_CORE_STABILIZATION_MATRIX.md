@@ -1,0 +1,26 @@
+# GNS Core Stabilization Matrix
+
+Last updated: 2026-06-26
+
+| Requirement | Current state | Evidence | Implementation files | Tests | Remaining work | Priority | External blocker |
+|---|---|---|---|---|---|---|---|
+| `uv sync` packaging | Fixed | `uv sync` passes after explicit package discovery | `pyproject.toml`, `uv.lock` | command verification | None | P0 | None |
+| Alembic model/schema discipline | Fixed for current models | One head `2ba920e67437`; `alembic downgrade base`, `upgrade head`, and `check` pass | `migrations/versions/2ba920e67437_initial_durable_notification_platform_.py`, `ett_gns_app/models.py` | Alembic commands | Run PostgreSQL check in CI/container | P0 | Local Docker/PostgreSQL unavailable |
+| Fallback provider reference | Present in committed migration | `provider_configs.fallback_provider_id` exists in initial schema; duplicate empty local revisions removed | migration, `ProviderConfig` model | Alembic check | None | P0 | None |
+| Tenant selector | Implemented | Topbar fetches tenant names, searches, creates tenant, auto-selects, clears stale ID | `admin/components/workspace-selectors.tsx` | frontend build/lint | Browser E2E after Docker/staging | P0 | None |
+| Application selector | Implemented | Topbar fetches apps by tenant, searches, creates app, auto-selects, clears stale app on tenant change | `admin/components/workspace-selectors.tsx` | frontend build/lint | Browser E2E after Docker/staging | P0 | None |
+| Guided onboarding | Implemented | Dashboard checklist shows Tenant → Application → Event → Template → Provider → Credential → Test notification | `admin/app/page.tsx` | frontend build | More granular Playwright flow | P0 | None |
+| Provider pre-save connection test | Implemented | `POST /api/v1/provider-configs/test-connection` tests unsaved config and never persists secret | `ett_gns_app/management_api.py`, `ett_gns_app/schemas.py` | `test_provider_config_aliases_pre_save_test_secret_replace_default_and_archive` | Live SMTP/provider verification | P0 | Real provider credentials |
+| Provider lifecycle aliases | Implemented | GET/PATCH/test/replace-secret/activate/deactivate/set-default/unset-default/DELETE aliases under `/provider-configs` | `management_api.py` | provider tests | None | P0 | None |
+| Safe provider archive | Implemented | Archive requires inactive/non-default, clears fallback dependencies, destroys secret material, preserves row/history | `management_api.py` | provider archive test | UI edit dialog for public config can be richer | P0 | None |
+| Provider UI | Improved | Pre-save test gate, normalized result, activate/deactivate, default, archive actions | `admin/app/providers/page.tsx` | frontend build/lint | Full edit/replace-secret modal polish | P1 | None |
+| Swagger Bearer authorize | Implemented | OpenAPI has `ApplicationBearer` scheme on notification POST | `ett_gns_app/main.py` | `test_openapi_exposes_application_bearer_security` | None | P0 | None |
+| Notification app scope | Fixed | `app_id` optional; credential application is source of truth; mismatch returns `application_scope_mismatch` | `api.py`, `schemas.py` | runtime tests | None | P0 | None |
+| Frontend error rendering | Improved | Error state shows safe message, code, request ID, and suggested recovery | `admin/lib/api.ts`, `admin/components/query-state.tsx` | frontend build/lint | Per-form field mapping | P1 | None |
+| Admin RBAC/OIDC | Implemented boundary | Dev identity limited by environment settings; OIDC verifies issuer/audience/signature/expiry/roles | `security.py`, `settings.py` | existing security/control-plane tests | Live OIDC realm test | P0 | OIDC provider unavailable |
+| Event/template runtime | Implemented | Event schema/versioning, template validation/preview/publish/history available | `api.py`, `management_api.py`, admin pages | backend/frontend tests | More UI edge-case tests | P1 | None |
+| Operations timeline/retry/DLQ | Implemented | Notification list, detail timeline, retry and DLQ replay endpoints/UI | `operations_api.py`, `admin/app/notifications/page.tsx` | backend tests | Live worker/queue E2E | P1 | Docker/RabbitMQ unavailable |
+| Observability | Implemented | Request IDs, structured logs, metrics, traces and dashboard artifacts | `main.py`, `observability.py`, `observability/grafana-dashboard.json` | build/import checks | Staging telemetry validation | P1 | Staging unavailable |
+| Docker Compose local stack | Artifacts present | Compose includes API, admin, migration, worker, scheduler, outbox, PostgreSQL, RabbitMQ, Redis, Mailpit | `docker-compose.yml`, Dockerfiles | YAML parse from prior verification | Execute compose | P0 | `docker` unavailable |
+| Load tests | Artifacts present | k6 scenarios exist | `load-tests/*.js` | file audit | Execute and record results | P2 | `k6` and staging unavailable |
+

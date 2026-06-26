@@ -19,14 +19,16 @@ Last updated: 2026-06-26
 - Signed/idempotent callbacks and delivery timelines
 - Quotas, usage, audits, structured logs, Prometheus and OpenTelemetry
 - Connected Next.js administration console
+- Searchable tenant/application selectors, stale-ID recovery, guided onboarding and provider pre-save testing
+- Provider-config compatibility endpoints, safe provider archive and Swagger bearer auth
 - CI/CD, Compose, Render blueprint, security verification, operations docs and load-test definitions
 
 ## Verified
 
 - Ruff format/lint: pass
-- Strict mypy: pass for 20 production source files
-- Backend: all 27 tests verified; 26 pass in restricted mode and SMTP passes separately with loopback permission
-- Scoped backend coverage: 75.54%
+- Strict mypy: pass for 18 production source files
+- Backend: all 30 tests pass
+- Scoped backend coverage: 78%
 - Alembic upgrade/check/downgrade: pass
 - Frontend lint/type/unit/build: pass
 - Playwright: 1 pass

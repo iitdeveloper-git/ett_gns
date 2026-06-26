@@ -138,6 +138,7 @@ def test_runtime_rejects_cross_application_and_bad_schema(
         },
     )
     assert cross_app.status_code == 403
+    assert cross_app.json()["detail"]["code"] == "application_scope_mismatch"
     invalid_data = client.post(
         "/api/v1/notifications",
         headers={"Authorization": f"Bearer {first_secret}", "Idempotency-Key": "invalid"},
@@ -150,6 +151,34 @@ def test_runtime_rejects_cross_application_and_bad_schema(
         },
     )
     assert invalid_data.status_code == 422
+
+
+def test_runtime_derives_application_from_credential_when_app_id_is_omitted(
+    client: TestClient, platform_headers: dict[str, str]
+) -> None:
+    application, secret = provision_runtime(client, platform_headers, "derived-app")
+    response = client.post(
+        "/api/v1/notifications",
+        headers={"Authorization": f"Bearer {secret}", "Idempotency-Key": "derived-app"},
+        json={
+            "event_key": "account.welcome",
+            "channel": "email",
+            "recipient": {"email": "person@example.com"},
+            "data": {"name": "Ravi"},
+        },
+    )
+    assert response.status_code == 202, response.text
+    assert response.json()["application_id"] == application["id"]
+
+
+def test_openapi_exposes_application_bearer_security(
+    client: TestClient,
+) -> None:
+    schema = client.get("/openapi.json").json()
+    assert schema["components"]["securitySchemes"]["ApplicationBearer"]["scheme"] == "bearer"
+    assert schema["paths"]["/api/v1/notifications"]["post"]["security"] == [
+        {"ApplicationBearer": []}
+    ]
 
 
 def test_quota_is_enforced_without_charging_idempotent_duplicate(

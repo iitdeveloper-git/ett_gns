@@ -24,7 +24,8 @@ Production uses an OIDC bearer token whose issuer, audience, signature, expiry a
 - `/api/v1/template-versions/{version_id}/validate|preview|test-send|publish`
 - `/api/v1/tenants/{tenant_id}/providers`
 - `/api/v1/apps/{app_id}/providers`
-- `/api/v1/providers/{provider_id}/test|activate|deactivate`
+- `/api/v1/provider-configs/test-connection`
+- `/api/v1/provider-configs/{provider_id}/test|replace-secret|activate|deactivate|set-default|unset-default`
 - `/api/v1/audits`
 - `/api/v1/operations/dashboard`
 - `/api/v1/operations/notifications`
@@ -41,7 +42,6 @@ Idempotency-Key: unique-business-operation
 
 ```json
 {
-  "app_id": "app_...",
   "event_key": "account.welcome",
   "channel": "email",
   "recipient": {"email": "person@example.com"},
@@ -53,4 +53,4 @@ Idempotency-Key: unique-business-operation
 }
 ```
 
-The response is `202`. Reusing the key with the same canonical request returns the original notification; different content returns `409 idempotency_conflict`.
+The response is `202`. `app_id` is derived from the bearer credential; if supplied, it must match or the API returns `403 application_scope_mismatch`. Reusing the key with the same canonical request returns the original notification; different content returns `409 idempotency_conflict`.

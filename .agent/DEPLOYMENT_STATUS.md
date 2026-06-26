@@ -16,4 +16,4 @@ Last checked: 2026-06-26
 | Live provider delivery | Blocked: credentials unavailable |
 | Live OIDC login | Blocked: provider unavailable |
 | Staging deployment | Blocked: target and cloud permissions unavailable |
-| Load results | Blocked: k6/representative deployment unavailable |
+| Load results | Blocked: `k6: command not found` and representative deployment unavailable |

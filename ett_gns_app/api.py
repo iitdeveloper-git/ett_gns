@@ -722,9 +722,16 @@ def create_notification(
 ) -> Notification:
     if not principal.can("notifications:send"):
         fail(403, "permission_denied", "Credential cannot send notifications")
-    if principal.application_id != body.app_id:
-        fail(403, "application_mismatch", "Credential does not belong to requested application")
-    app = db.get(Application, body.app_id)
+    app_id = principal.application_id
+    if body.app_id and body.app_id != principal.application_id:
+        fail(
+            403,
+            "application_scope_mismatch",
+            "Credential does not belong to requested application",
+        )
+    if not app_id:
+        fail(403, "application_scope_missing", "Credential is not scoped to an application")
+    app = db.get(Application, app_id)
     if not app or app.status != Lifecycle.ACTIVE:
         fail(404, "application_not_found", "Active application not found")
     event = db.scalar(

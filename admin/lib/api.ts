@@ -5,6 +5,7 @@ export class ApiError extends Error {
     message: string,
     readonly status: number,
     readonly code?: string,
+    readonly requestId?: string,
   ) {
     super(message);
   }
@@ -31,12 +32,16 @@ export async function api<T>(
       detail.message ?? `Request failed with HTTP ${response.status}`,
       response.status,
       detail.code,
+      detail.request_id,
     );
   }
   return payload as T;
 }
 
 export type Page<T> = {items: T[]; total: number; limit: number; offset: number};
+export type Tenant = {
+  id: string; name: string; slug: string; status: string; created_at: string; updated_at: string;
+};
 export type Application = {
   id: string; tenant_id: string; name: string; slug: string; status: string;
   default_locale: string; timezone: string; quota_per_minute: number; quota_per_day: number;

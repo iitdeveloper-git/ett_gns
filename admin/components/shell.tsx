@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import {usePathname} from "next/navigation";
-import {useWorkspace} from "@/components/workspace";
+import {WorkspaceSelectors} from "@/components/workspace-selectors";
 
 const nav = [
   ["/", "Dashboard", Gauge],
@@ -21,7 +21,6 @@ const nav = [
 
 export function Shell({children}: {children: React.ReactNode}) {
   const pathname = usePathname();
-  const {tenantId, appId, setTenantId, setAppId} = useWorkspace();
   return <div className="app-shell">
     <aside className="sidebar">
       <div className="brand"><div className="brand-mark">G</div><div><strong>GNS Console</strong><span>Operations control plane</span></div></div>
@@ -34,10 +33,7 @@ export function Shell({children}: {children: React.ReactNode}) {
       <header className="topbar">
         <div className="workspace-fields">
           <Activity aria-hidden size={17} color="var(--accent)" />
-          <label htmlFor="tenant-id">Tenant</label>
-          <input id="tenant-id" className="workspace-input mono" value={tenantId} onChange={(event) => setTenantId(event.target.value)} placeholder="tnt_…" />
-          <label htmlFor="app-id">App</label>
-          <input id="app-id" className="workspace-input mono" value={appId} onChange={(event) => setAppId(event.target.value)} placeholder="app_…" />
+          <WorkspaceSelectors />
         </div>
         <div className="identity"><span className="identity-dot" /><span>Local platform admin</span></div>
       </header>

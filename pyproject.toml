@@ -12,6 +12,19 @@ dynamic = ["dependencies"]
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
 
+[tool.setuptools.packages.find]
+include = ["ett_gns_app*"]
+exclude = [
+  "admin*",
+  "docs*",
+  "gns_product_design*",
+  "load-tests*",
+  "migrations*",
+  "observability*",
+  "templates*",
+  "tests*",
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra --strict-markers"

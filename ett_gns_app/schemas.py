@@ -141,7 +141,7 @@ class SchemaVersionRead(ORMModel):
 
 
 class NotificationCreate(BaseModel):
-    app_id: str
+    app_id: str | None = None
     event_key: str
     channel: Literal["email", "sms", "webhook", "push", "telegram", "whatsapp"]
     recipient: dict[str, Any]
@@ -234,14 +234,25 @@ class RenderedPreview(BaseModel):
 
 
 class ProviderCreate(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
     channel: Literal["email", "sms", "webhook", "push", "telegram", "whatsapp"]
     provider_type: str = Field(min_length=1, max_length=64)
     name: str = Field(min_length=1, max_length=120)
     public_config: dict[str, Any] = Field(default_factory=dict)
-    secret: dict[str, Any] | None = None
+    secret: dict[str, Any] | None = Field(default=None, alias="secret_config")
     is_default: bool = False
     fallback_policy: Literal["none", "default_if_absent", "explicit_failover"] = "none"
     fallback_provider_id: str | None = None
+
+
+class ProviderConnectionTest(BaseModel):
+    provider_type: str = Field(min_length=1, max_length=64)
+    channel: Literal["email", "sms", "webhook", "push", "telegram", "whatsapp"]
+    public_config: dict[str, Any] = Field(default_factory=dict)
+    secret_config: dict[str, Any] = Field(default_factory=dict)
+    tenant_id: str | None = None
+    application_id: str | None = None
 
 
 class ProviderUpdate(BaseModel):
@@ -273,10 +284,15 @@ class ProviderRead(ORMModel):
 
 
 class ProviderSecretReplace(BaseModel):
-    secret: dict[str, Any]
+    model_config = ConfigDict(populate_by_name=True)
+
+    secret: dict[str, Any] = Field(alias="secret_config")
 
 
 class ProviderTestResult(BaseModel):
     valid: bool
     health_status: str
     errors: list[str] = Field(default_factory=list)
+    error_code: str | None = None
+    message: str | None = None
+    latency_ms: int | None = None

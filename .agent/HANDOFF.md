@@ -2,7 +2,7 @@
 
 Last updated: 2026-06-26
 
-The continuation goal is complete for all work executable without external infrastructure or credentials. The checkout originally contained only an older Flask prototype; the referenced foundation commits were absent.
+The GNS Core stabilization goal is complete for all work executable without external infrastructure or credentials. The checkout originally contained only an older Flask prototype; the referenced foundation commits were absent.
 
 ## Completed
 
@@ -14,13 +14,16 @@ The continuation goal is complete for all work executable without external infra
 - Signed replay-safe callbacks and legal delivery transitions
 - Quotas, usage, audits, logs, metrics and tracing
 - Responsive connected Next.js admin console
+- Tenant/application selectors, stale-ID recovery and guided onboarding
+- Provider pre-save connection testing, provider-config aliases, safe archive and default lifecycle
+- Swagger bearer authentication and credential-derived notification app scope
 - Docker/Compose and managed-container deployment artifacts
 - CI/CD, SBOM/image/secret scanning configuration
 - Complete required documentation, security verification and load-test definitions
 
 ## Verification
 
-- 27 backend tests verified; restricted aggregate run is 26 passed/1 skipped and the skipped SMTP test passes with loopback permission
+- 30 backend tests pass
 - 75.54% scoped backend coverage
 - Ruff and strict mypy pass
 - Alembic upgrade/check/downgrade pass

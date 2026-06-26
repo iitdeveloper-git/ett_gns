@@ -12,6 +12,12 @@
 - [x] Connected responsive Next.js admin console
 - [x] CI/CD, deployment profiles, security verification, operations docs and load-test scripts
 - [x] Local lint/type/test/build/audit/migration verification
+- [x] GNS Core stabilization audit matrix and final report
+- [x] `uv sync` package discovery fix
+- [x] Tenant/application selectors with stale-ID recovery
+- [x] Guided onboarding checklist
+- [x] Provider pre-save test, provider-config aliases, default/unset-default and safe archive
+- [x] Swagger Bearer auth and credential-derived notification app scope
 
 ## Human/external actions
 
