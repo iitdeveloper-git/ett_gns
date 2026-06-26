@@ -10,6 +10,8 @@
 - Added Swagger HTTP Bearer scheme for application credentials.
 - Made notification `app_id` optional and enforced credential-derived application scope.
 - Improved frontend error rendering with machine code and request ID.
+- Added first-class in-app notifications: durable records, recipient state, SSE, preferences, admin UI, React SDK, demo app, docs and tests.
+- Improved SMTP TLS certificate failure diagnostics.
 
 ## 0.2.0 - 2026-06-26
 

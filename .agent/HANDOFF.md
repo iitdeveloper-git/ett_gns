@@ -17,13 +17,14 @@ The GNS Core stabilization goal is complete for all work executable without exte
 - Tenant/application selectors, stale-ID recovery and guided onboarding
 - Provider pre-save connection testing, provider-config aliases, safe archive and default lifecycle
 - Swagger bearer authentication and credential-derived notification app scope
+- In-app notifications: durable records, recipient state, SSE, preferences, admin page, React SDK and demo
 - Docker/Compose and managed-container deployment artifacts
 - CI/CD, SBOM/image/secret scanning configuration
 - Complete required documentation, security verification and load-test definitions
 
 ## Verification
 
-- 30 backend tests pass
+- 32 backend tests pass
 - 75.54% scoped backend coverage
 - Ruff and strict mypy pass
 - Alembic upgrade/check/downgrade pass
@@ -34,4 +35,4 @@ The GNS Core stabilization goal is complete for all work executable without exte
 
 ## External blockers
 
-Docker, provider credentials, OIDC provider, staging target/cloud permissions, and representative load-test environment are unavailable. Exact next actions are listed in `.agent/TASKS.md` and `docs/release-checklist.md`.
+Docker, provider credentials, OIDC provider, staging target/cloud permissions, Redis fanout validation, IAM role/group expansion, and representative load-test environment are unavailable. Exact next actions are listed in `.agent/TASKS.md` and `docs/release-checklist.md`.

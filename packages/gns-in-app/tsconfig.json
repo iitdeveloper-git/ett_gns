@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "ignoreDeprecations": "6.0",
+    "baseUrl": ".",
+    "paths": {
+      "react": ["../../admin/node_modules/@types/react/index.d.ts"],
+      "react/jsx-runtime": ["../../admin/node_modules/@types/react/jsx-runtime.d.ts"],
+      "react-dom": ["../../admin/node_modules/react-dom"]
+    },
+    "types": ["react"],
+    "typeRoots": ["../../admin/node_modules/@types"]
+  },
+  "include": ["src"]
+}

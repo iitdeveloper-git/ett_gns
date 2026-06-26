@@ -63,6 +63,14 @@ export type NotificationRecord = {
   id: string; application_id: string; event_key: string; channel: string;
   status: string; correlation_id: string | null; created_at: string; failure_code: string | null;
 };
+export type InAppAdminNotification = {
+  id: string; tenant_id: string; application_id: string; event_key: string; title: string;
+  severity: string; priority: number; created_at: string;
+};
+export type InAppConnection = {
+  connection_id: string; tenant_id: string; application_id: string; user_id: string;
+  session_id: string; transport: string; connected_at: string; last_seen_at: string;
+};
 export type Credential = {
   id: string; application_id: string; name: string; key_prefix: string;
   permissions: string[]; expires_at: string | null; last_used_at: string | null;

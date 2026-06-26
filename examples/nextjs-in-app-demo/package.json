@@ -1,0 +1,13 @@
+{
+  "name": "gns-nextjs-in-app-demo",
+  "private": true,
+  "scripts": {
+    "dev": "next dev"
+  },
+  "dependencies": {
+    "@iitdeveloper/gns-in-app": "file:../../packages/gns-in-app",
+    "next": "16.2.9",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  }
+}

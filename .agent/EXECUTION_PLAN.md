@@ -12,4 +12,6 @@ Resume in this order when external systems are available:
 4. Configure an OIDC test realm and verify every documented role.
 5. Deploy `render.yaml` or the chosen managed-container equivalent to staging.
 6. Run DAST and the k6 scenarios; record real latency, throughput, queue age and sizing.
-7. Complete the release checklist and production approval.
+7. Validate in-app SSE with Redis pub/sub or streams in a multi-instance staging topology.
+8. Integrate IAM role/group membership expansion for in-app fan-out.
+9. Complete the release checklist and production approval.

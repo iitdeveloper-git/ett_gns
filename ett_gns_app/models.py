@@ -313,3 +313,99 @@ class UsageBucket(Base):
     bucket_kind: Mapped[str] = mapped_column(String(16))
     bucket_start: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     count: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class InAppNotification(TimestampMixin, Base):
+    __tablename__ = "in_app_notifications"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "application_id", "deduplication_key"),
+        Index("ix_in_app_notifications_active", "tenant_id", "application_id", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=lambda: new_id("ian"))
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    application_id: Mapped[str] = mapped_column(ForeignKey("applications.id"), index=True)
+    source_notification_id: Mapped[str] = mapped_column(ForeignKey("notifications.id"), index=True)
+    event_key: Mapped[str] = mapped_column(String(160), index=True)
+    template_version_id: Mapped[str | None] = mapped_column(ForeignKey("template_versions.id"))
+    title: Mapped[str] = mapped_column(String(240))
+    message: Mapped[str] = mapped_column(Text)
+    severity: Mapped[str] = mapped_column(String(24), default="info")
+    priority: Mapped[int] = mapped_column(Integer, default=5)
+    action_payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    toast_payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column("metadata", JSON, default=dict)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    deduplication_key: Mapped[str | None] = mapped_column(String(240))
+    request_fingerprint: Mapped[str] = mapped_column(String(64))
+    correlation_id: Mapped[str | None] = mapped_column(String(120), index=True)
+
+
+class InAppRecipient(TimestampMixin, Base):
+    __tablename__ = "in_app_recipients"
+    __table_args__ = (
+        UniqueConstraint("notification_id", "recipient_type", "recipient_id"),
+        Index("ix_in_app_recipients_inbox", "tenant_id", "application_id", "recipient_id", "read_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=lambda: new_id("iar"))
+    notification_id: Mapped[str] = mapped_column(ForeignKey("in_app_notifications.id"), index=True)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    application_id: Mapped[str] = mapped_column(ForeignKey("applications.id"), index=True)
+    recipient_type: Mapped[str] = mapped_column(String(32))
+    recipient_id: Mapped[str] = mapped_column(String(200), index=True)
+    delivery_status: Mapped[str] = mapped_column(String(32), default="created")
+    delivery_attempt_count: Mapped[int] = mapped_column(Integer, default=0)
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    displayed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    opened_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    dismissed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class InAppDeliveryAttempt(Base):
+    __tablename__ = "in_app_delivery_attempts"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=lambda: new_id("iad"))
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    notification_recipient_id: Mapped[str] = mapped_column(
+        ForeignKey("in_app_recipients.id"), index=True
+    )
+    attempt_number: Mapped[int] = mapped_column(Integer)
+    transport: Mapped[str] = mapped_column(String(32), default="sse")
+    status: Mapped[str] = mapped_column(String(32))
+    error_code: Mapped[str | None] = mapped_column(String(120))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class InAppConnection(Base):
+    __tablename__ = "in_app_connections"
+
+    connection_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    application_id: Mapped[str] = mapped_column(ForeignKey("applications.id"), index=True)
+    user_id: Mapped[str] = mapped_column(String(200), index=True)
+    session_id: Mapped[str] = mapped_column(String(200), index=True)
+    transport: Mapped[str] = mapped_column(String(32), default="sse")
+    device_id: Mapped[str | None] = mapped_column(String(200))
+    connected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class InAppPreference(TimestampMixin, Base):
+    __tablename__ = "in_app_preferences"
+    __table_args__ = (UniqueConstraint("tenant_id", "application_id", "user_id", "event_key"),)
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=lambda: new_id("iap"))
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    application_id: Mapped[str] = mapped_column(ForeignKey("applications.id"), index=True)
+    user_id: Mapped[str] = mapped_column(String(200), index=True)
+    event_key: Mapped[str] = mapped_column(String(160), default="*")
+    in_app_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    toast_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    sound_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    quiet_hours: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    minimum_priority: Mapped[int] = mapped_column(Integer, default=1)
