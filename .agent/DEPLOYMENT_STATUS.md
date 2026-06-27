@@ -7,6 +7,7 @@ Last checked: 2026-06-28
 | Docker executable | Blocked: `docker: command not found` |
 | Compose build/up | Not run because Docker is unavailable |
 | Alembic upgrade/check/downgrade | Pass on SQLite deterministic profile |
+| External PostgreSQL URL | Blocked: current Supabase password contains reserved characters and must be URL-encoded |
 | API local startup | Pass on `127.0.0.1:5000` |
 | Admin local startup/browser integration | Pass on `127.0.0.1:3000` |
 | Local SMTP integration | Pass with loopback socket permission |

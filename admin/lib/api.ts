@@ -1,4 +1,7 @@
-export const API_URL = process.env.NEXT_PUBLIC_GNS_API_URL ?? "http://127.0.0.1:5000";
+const IS_SERVER = typeof window === "undefined";
+export const API_URL = IS_SERVER
+  ? (process.env.GNS_INTERNAL_API_URL ?? "http://api:5000")
+  : (process.env.NEXT_PUBLIC_GNS_API_URL ?? "http://localhost:5001");
 
 export class ApiError extends Error {
   constructor(
@@ -57,11 +60,14 @@ export type TemplateRecord = {
 export type Provider = {
   id: string; application_id: string | null; channel: string; provider_type: string;
   name: string; active: boolean; is_default: boolean; health_status: string;
-  fallback_policy: string; secret_configured: boolean;
+  public_config: Record<string, unknown>; fallback_policy: string; fallback_provider_id: string | null;
+  verified_at: string | null; last_error_code: string | null; secret_configured: boolean;
+  created_at: string; updated_at: string;
 };
 export type NotificationRecord = {
   id: string; application_id: string; event_key: string; channel: string;
-  status: string; correlation_id: string | null; created_at: string; failure_code: string | null;
+  status: string; correlation_id: string | null; created_at: string; scheduled_at: string | null;
+  failure_code: string | null; recipient?: Record<string, unknown>;
 };
 export type InAppAdminNotification = {
   id: string; tenant_id: string; application_id: string; event_key: string; title: string;

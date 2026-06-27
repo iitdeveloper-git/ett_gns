@@ -36,10 +36,14 @@ Last updated: 2026-06-28
 - Browser QA: desktop/mobile/API integration, no console warnings
 - Python and npm vulnerability audits: clean
 - In-app SDK TypeScript compile: pass
+- Provider edit/secret replacement and main notification test-send UI: pass frontend lint/type/unit/build
+- Celery task strict typing: pass
+- Alembic check: pass with deterministic SQLite URL; external Supabase URL requires URL-encoded password
 
 ## External blockers
 
 - Docker executable unavailable
+- External Supabase/PostgreSQL URL currently malformed because reserved password characters are not URL-encoded
 - Live provider credentials unavailable
 - Live OIDC provider unavailable
 - Staging/cloud target unavailable
