@@ -1,6 +1,6 @@
 # Project State
 
-Last updated: 2026-06-26
+Last updated: 2026-06-28
 
 ## Recovery
 
@@ -27,7 +27,7 @@ Last updated: 2026-06-26
 ## Verified
 
 - Ruff format/lint: pass
-- Strict mypy: pass for 18 production source files
+- Strict mypy: pass for 19 production source files
 - Backend: all 32 tests pass
 - Scoped backend coverage: 77%
 - Alembic upgrade/check/downgrade: pass
@@ -35,6 +35,7 @@ Last updated: 2026-06-26
 - Playwright: 1 pass
 - Browser QA: desktop/mobile/API integration, no console warnings
 - Python and npm vulnerability audits: clean
+- In-app SDK TypeScript compile: pass
 
 ## External blockers
 

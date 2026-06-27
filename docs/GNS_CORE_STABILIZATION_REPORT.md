@@ -1,6 +1,6 @@
 # GNS Core Stabilization Report
 
-Date: 2026-06-26
+Date: 2026-06-28
 
 ## Completed features and fixes
 
@@ -15,24 +15,26 @@ Date: 2026-06-26
 - Added Swagger HTTP Bearer scheme for GNS application credentials.
 - Changed notification runtime contract so `app_id` is optional and derived from the credential; supplied mismatches return `application_scope_mismatch`.
 - Improved frontend error rendering with safe message, code, request ID, and recovery hint.
+- Added the first-class `in_app` channel with durable notification-center records, preferences, SSE delivery, admin UI, React SDK, and demo app.
 
 ## Migration and packaging status
 
 - `uv sync`: pass.
-- Alembic current head: `2ba920e67437`.
-- `uv run alembic downgrade base`: pass.
+- Alembic current head: `4a0f8c9d2b11`.
+- `uv run alembic downgrade 2ba920e67437`: pass.
 - `uv run alembic upgrade head`: pass.
 - `uv run alembic check`: pass, no drift detected.
 - PostgreSQL verification remains to be executed in Docker/CI because local Docker/PostgreSQL is unavailable.
 
 ## Test and quality status
 
-- Backend tests: 30 passed.
-- Backend coverage: 78%.
+- Backend tests: 32 passed.
+- Backend coverage: 77%.
 - Ruff: pass.
-- Strict mypy subset: pass for 18 production files.
+- Strict mypy subset: pass for 19 production files.
 - Frontend lint: pass.
 - Frontend typecheck/build: pass through `next build`.
+- In-app SDK TypeScript compile: pass.
 - Docker Compose: blocked locally, `docker: command not found`.
 - k6 load tests: blocked locally, `k6: command not found`.
 
@@ -55,7 +57,9 @@ The local backend test suite covers onboarding primitives, credential creation, 
 ## Commit list
 
 - `f431f6d feat: complete multi-tenant notification platform`
-- Current stabilization changes are ready to commit after final verification.
+- `71fc1ed feat: stabilize gns core onboarding and providers`
+- `8485463 feat: add in-app notifications`
+- This documentation refresh records the 2026-06-28 verification pass.
 
 ## Exact next actions
 

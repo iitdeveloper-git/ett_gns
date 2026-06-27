@@ -1,6 +1,6 @@
 # GNS Core Security Verification
 
-Last updated: 2026-06-26
+Last updated: 2026-06-28
 
 | Control | Verification | Status |
 |---|---|---|
@@ -24,4 +24,3 @@ Last updated: 2026-06-26
 | Provider archive dependency checks | Active/default providers blocked; fallback dependencies cleared; secret material destroyed | Pass |
 
 External verification still required: live OIDC role/scope claims, live provider sandboxes, Docker Compose PostgreSQL/queue integration, staging DAST, and production network policy review.
-

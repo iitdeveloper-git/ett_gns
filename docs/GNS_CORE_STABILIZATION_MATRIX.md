@@ -1,11 +1,11 @@
 # GNS Core Stabilization Matrix
 
-Last updated: 2026-06-26
+Last updated: 2026-06-28
 
 | Requirement | Current state | Evidence | Implementation files | Tests | Remaining work | Priority | External blocker |
 |---|---|---|---|---|---|---|---|
 | `uv sync` packaging | Fixed | `uv sync` passes after explicit package discovery | `pyproject.toml`, `uv.lock` | command verification | None | P0 | None |
-| Alembic model/schema discipline | Fixed for current models | One head `2ba920e67437`; `alembic downgrade base`, `upgrade head`, and `check` pass | `migrations/versions/2ba920e67437_initial_durable_notification_platform_.py`, `ett_gns_app/models.py` | Alembic commands | Run PostgreSQL check in CI/container | P0 | Local Docker/PostgreSQL unavailable |
+| Alembic model/schema discipline | Fixed for current models | One head `4a0f8c9d2b11`; `alembic downgrade 2ba920e67437`, `upgrade head`, and `check` pass | `migrations/versions/2ba920e67437_initial_durable_notification_platform_.py`, `migrations/versions/4a0f8c9d2b11_add_in_app_notifications.py`, `ett_gns_app/models.py` | Alembic commands | Run PostgreSQL check in CI/container | P0 | Local Docker/PostgreSQL unavailable |
 | Fallback provider reference | Present in committed migration | `provider_configs.fallback_provider_id` exists in initial schema; duplicate empty local revisions removed | migration, `ProviderConfig` model | Alembic check | None | P0 | None |
 | Tenant selector | Implemented | Topbar fetches tenant names, searches, creates tenant, auto-selects, clears stale ID | `admin/components/workspace-selectors.tsx` | frontend build/lint | Browser E2E after Docker/staging | P0 | None |
 | Application selector | Implemented | Topbar fetches apps by tenant, searches, creates app, auto-selects, clears stale app on tenant change | `admin/components/workspace-selectors.tsx` | frontend build/lint | Browser E2E after Docker/staging | P0 | None |
@@ -20,7 +20,7 @@ Last updated: 2026-06-26
 | Admin RBAC/OIDC | Implemented boundary | Dev identity limited by environment settings; OIDC verifies issuer/audience/signature/expiry/roles | `security.py`, `settings.py` | existing security/control-plane tests | Live OIDC realm test | P0 | OIDC provider unavailable |
 | Event/template runtime | Implemented | Event schema/versioning, template validation/preview/publish/history available | `api.py`, `management_api.py`, admin pages | backend/frontend tests | More UI edge-case tests | P1 | None |
 | Operations timeline/retry/DLQ | Implemented | Notification list, detail timeline, retry and DLQ replay endpoints/UI | `operations_api.py`, `admin/app/notifications/page.tsx` | backend tests | Live worker/queue E2E | P1 | Docker/RabbitMQ unavailable |
+| In-app notification channel | Implemented | Durable notification-center records, preferences, SSE stream, admin UI, React SDK, and demo app are present | `ett_gns_app/in_app.py`, `admin/app/in-app/page.tsx`, `packages/gns-in-app` | `tests/test_in_app.py`, SDK TypeScript compile | Redis-backed multi-instance fanout/staging E2E | P1 | Redis/staging unavailable |
 | Observability | Implemented | Request IDs, structured logs, metrics, traces and dashboard artifacts | `main.py`, `observability.py`, `observability/grafana-dashboard.json` | build/import checks | Staging telemetry validation | P1 | Staging unavailable |
 | Docker Compose local stack | Artifacts present | Compose includes API, admin, migration, worker, scheduler, outbox, PostgreSQL, RabbitMQ, Redis, Mailpit | `docker-compose.yml`, Dockerfiles | YAML parse from prior verification | Execute compose | P0 | `docker` unavailable |
 | Load tests | Artifacts present | k6 scenarios exist | `load-tests/*.js` | file audit | Execute and record results | P2 | `k6` and staging unavailable |
-
