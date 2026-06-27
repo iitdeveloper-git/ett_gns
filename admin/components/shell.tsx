@@ -2,7 +2,7 @@
 
 import {
   Activity, AppWindow, Bell, FileCode2, Gauge, KeyRound, RadioTower,
-  ScrollText, ShieldCheck,
+  ScrollText, ShieldCheck, Inbox,
 } from "lucide-react";
 import Link from "next/link";
 import {usePathname} from "next/navigation";
@@ -14,6 +14,7 @@ const nav = [
   ["/events", "Events", RadioTower],
   ["/templates", "Templates", FileCode2],
   ["/providers", "Providers", ShieldCheck],
+  ["/in-app", "In-App", Inbox],
   ["/notifications", "Notifications", Bell],
   ["/credentials", "Credentials", KeyRound],
   ["/audits", "Audits", ScrollText],

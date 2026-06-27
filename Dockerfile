@@ -17,6 +17,7 @@ RUN groupadd --system gns && useradd --system --gid gns --home /app gns
 WORKDIR /app
 COPY --from=builder /opt/venv /opt/venv
 COPY --chown=gns:gns . .
+RUN chmod +x run.sh
 USER gns
 EXPOSE 5000
-CMD ["uvicorn", "ett_gns_app.main:app", "--host", "0.0.0.0", "--port", "5000", "--proxy-headers"]
+CMD ["./run.sh"]

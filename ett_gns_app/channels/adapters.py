@@ -237,6 +237,13 @@ class SMTPAdapter:
             raise AdapterError(
                 f"SMTP_{exc.smtp_code}", str(exc.smtp_error), retryable=retryable
             ) from exc
+        except ssl.SSLCertVerificationError as exc:
+            raise AdapterError(
+                "SMTP_TLS_FAILED",
+                "SMTP certificate verification failed. Install the full server certificate chain "
+                "or use a certificate trusted by the runtime.",
+                retryable=False,
+            ) from exc
         except (TimeoutError, OSError, smtplib.SMTPServerDisconnected) as exc:
             raise AdapterError("SMTP_UNAVAILABLE", str(exc), retryable=True) from exc
         except smtplib.SMTPException as exc:
@@ -263,6 +270,13 @@ class SMTPAdapter:
                 server.noop()
         except smtplib.SMTPAuthenticationError as exc:
             raise AdapterError("PROVIDER_AUTH_FAILED", str(exc), retryable=False) from exc
+        except ssl.SSLCertVerificationError as exc:
+            raise AdapterError(
+                "SMTP_TLS_FAILED",
+                "SMTP certificate verification failed. Install the full server certificate chain "
+                "or use a certificate trusted by the runtime.",
+                retryable=False,
+            ) from exc
         except (OSError, smtplib.SMTPException) as exc:
             raise AdapterError("SMTP_UNAVAILABLE", str(exc), retryable=True) from exc
 

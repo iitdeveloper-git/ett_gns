@@ -8,6 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ett_gns_app.channels import AdapterError, adapter_for
+from ett_gns_app.in_app import create_in_app_delivery
 from ett_gns_app.models import (
     Application,
     DeliveryAttempt,
@@ -75,6 +76,50 @@ def process_notification(db: Session, notification_id: str, settings: Settings) 
 
     app = db.get(Application, notification.application_id)
     version = db.get(TemplateVersion, notification.template_version_id)
+    started = perf_counter()
+    if notification.channel == "in_app":
+        if not app or not version:
+            notification.status = NotificationStatus.FAILED
+            notification.failure_code = "SNAPSHOT_MISSING"
+            notification.processing_lease_until = None
+            db.commit()
+            return notification
+        try:
+            in_app = create_in_app_delivery(db, notification)
+            db.add(
+                DeliveryAttempt(
+                    tenant_id=notification.tenant_id,
+                    notification_id=notification.id,
+                    attempt_number=1,
+                    provider_config_id=None,
+                    status="delivered",
+                    retryable=False,
+                    provider_message_id=in_app.id,
+                    duration_ms=round((perf_counter() - started) * 1000),
+                )
+            )
+            notification.processing_lease_until = None
+            db.commit()
+            return notification
+        except Exception as exc:
+            db.add(
+                DeliveryAttempt(
+                    tenant_id=notification.tenant_id,
+                    notification_id=notification.id,
+                    attempt_number=1,
+                    provider_config_id=None,
+                    status="failed",
+                    retryable=False,
+                    error_code="IN_APP_DELIVERY_ERROR",
+                    error_message=str(exc)[:2000],
+                    duration_ms=round((perf_counter() - started) * 1000),
+                )
+            )
+            notification.status = NotificationStatus.FAILED
+            notification.failure_code = "IN_APP_DELIVERY_ERROR"
+            notification.processing_lease_until = None
+            db.commit()
+            return notification
     provider = db.get(ProviderConfig, notification.provider_config_id)
     if not app or not version or not provider:
         notification.status = NotificationStatus.FAILED
@@ -97,7 +142,6 @@ def process_notification(db: Session, notification_id: str, settings: Settings) 
         )
         or 0
     ) + 1
-    started = perf_counter()
     try:
         content = render_content(version.content, notification.event_data)
         secret = SecretStore(settings).decrypt(provider.secret_ciphertext)

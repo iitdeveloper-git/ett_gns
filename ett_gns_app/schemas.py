@@ -5,6 +5,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+Channel = Literal["email", "sms", "webhook", "push", "telegram", "whatsapp", "in_app"]
+
 
 class ORMModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -100,9 +102,7 @@ class EventCreate(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     event_key: str = Field(pattern=r"^[a-z][a-z0-9_.-]{2,159}$")
-    allowed_channels: list[Literal["email", "sms", "webhook", "push", "telegram", "whatsapp"]] = (
-        Field(min_length=1)
-    )
+    allowed_channels: list[Channel] = Field(min_length=1)
     recipient_policy: dict[str, Any] = Field(default_factory=dict)
     json_schema: dict[str, Any] = Field(alias="schema")
     compatibility: Literal["none", "backward", "forward", "full"] = "backward"
@@ -143,14 +143,15 @@ class SchemaVersionRead(ORMModel):
 class NotificationCreate(BaseModel):
     app_id: str | None = None
     event_key: str
-    channel: Literal["email", "sms", "webhook", "push", "telegram", "whatsapp"]
+    channel: Channel
     recipient: dict[str, Any]
     data: dict[str, Any]
     locale: str | None = None
     variant: str | None = None
-    priority: int = Field(default=5, ge=0, le=9)
+    priority: int = Field(default=5, ge=1, le=10)
     scheduled_at: datetime | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
+    expires_at: datetime | None = None
 
 
 class NotificationRead(ORMModel):
@@ -178,7 +179,7 @@ class EmailRecipient(BaseModel):
 
 
 class TemplateCreate(BaseModel):
-    channel: Literal["email", "sms", "webhook", "push", "telegram", "whatsapp"]
+    channel: Channel
     locale: str = Field(default="en", min_length=2, max_length=24)
     variant: str = Field(default="default", min_length=1, max_length=64)
     content: dict[str, Any]
@@ -227,7 +228,7 @@ class TemplateTestSend(BaseModel):
 
 
 class RenderedPreview(BaseModel):
-    rendered: dict[str, str]
+    rendered: dict[str, Any]
     locale: str
     variant: str
     version: int
@@ -236,7 +237,7 @@ class RenderedPreview(BaseModel):
 class ProviderCreate(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
-    channel: Literal["email", "sms", "webhook", "push", "telegram", "whatsapp"]
+    channel: Channel
     provider_type: str = Field(min_length=1, max_length=64)
     name: str = Field(min_length=1, max_length=120)
     public_config: dict[str, Any] = Field(default_factory=dict)
@@ -248,7 +249,7 @@ class ProviderCreate(BaseModel):
 
 class ProviderConnectionTest(BaseModel):
     provider_type: str = Field(min_length=1, max_length=64)
-    channel: Literal["email", "sms", "webhook", "push", "telegram", "whatsapp"]
+    channel: Channel
     public_config: dict[str, Any] = Field(default_factory=dict)
     secret_config: dict[str, Any] = Field(default_factory=dict)
     tenant_id: str | None = None
@@ -296,3 +297,60 @@ class ProviderTestResult(BaseModel):
     error_code: str | None = None
     message: str | None = None
     latency_ms: int | None = None
+
+
+class InAppNotificationRead(ORMModel):
+    id: str
+    event_key: str
+    title: str
+    message: str
+    severity: str
+    priority: int
+    action_payload: dict[str, Any]
+    toast_payload: dict[str, Any]
+    metadata_json: dict[str, Any]
+    expires_at: datetime | None
+    created_at: datetime
+    read: bool = False
+    recipient_id: str | None = None
+    read_at: datetime | None = None
+    dismissed_at: datetime | None = None
+    opened_at: datetime | None = None
+
+
+class InAppAck(BaseModel):
+    status: Literal["delivered", "displayed", "opened"]
+    device_id: str | None = Field(default=None, max_length=200)
+    session_id: str | None = Field(default=None, max_length=200)
+
+
+class InAppPreferenceRead(ORMModel):
+    user_id: str
+    event_key: str
+    in_app_enabled: bool
+    toast_enabled: bool
+    sound_enabled: bool
+    quiet_hours: dict[str, Any]
+    minimum_priority: int
+
+
+class InAppPreferenceUpdate(BaseModel):
+    event_key: str = "*"
+    in_app_enabled: bool | None = None
+    toast_enabled: bool | None = None
+    sound_enabled: bool | None = None
+    quiet_hours: dict[str, Any] | None = None
+    minimum_priority: int | None = Field(default=None, ge=1, le=10)
+
+
+class InAppUnreadCount(BaseModel):
+    unread: int
+
+
+class InAppAdminTest(BaseModel):
+    application_id: str
+    event_key: str
+    recipient: dict[str, Any]
+    data: dict[str, Any]
+    priority: int = Field(default=5, ge=1, le=10)
+    metadata: dict[str, Any] = Field(default_factory=dict)

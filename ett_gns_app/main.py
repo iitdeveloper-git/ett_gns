@@ -23,6 +23,7 @@ from starlette.responses import Response
 from ett_gns_app.api import router
 from ett_gns_app.callbacks import router as callback_router
 from ett_gns_app.database import engine, get_db
+from ett_gns_app.in_app import router as in_app_router
 from ett_gns_app.management_api import router as management_router
 from ett_gns_app.observability import configure_observability
 from ett_gns_app.operations_api import router as operations_router
@@ -219,4 +220,5 @@ app.include_router(router)
 app.include_router(management_router)
 app.include_router(callback_router)
 app.include_router(operations_router)
+app.include_router(in_app_router)
 configure_observability(app, engine, settings.environment)

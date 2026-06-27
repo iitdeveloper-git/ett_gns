@@ -26,7 +26,7 @@ from ett_gns_app.models import (
     Tenant,
 )
 from ett_gns_app.quotas import QuotaExceeded, consume_quota
-from ett_gns_app.resolution import ResolutionError, resolve_delivery
+from ett_gns_app.resolution import ResolutionError, resolve_delivery, resolve_template
 from ett_gns_app.schemas import (
     ApplicationCreate,
     ApplicationRead,
@@ -63,6 +63,7 @@ CHANNEL_RECIPIENT_KEYS = {
     "push": "token",
     "telegram": "chat_id",
     "whatsapp": "phone",
+    "in_app": "type",
 }
 VALID_CREDENTIAL_PERMISSIONS = {
     "notifications:send",
@@ -761,15 +762,29 @@ def create_notification(
     except ValidationError as exc:
         fail(422, "event_data_invalid", exc.message)
     try:
-        delivery = resolve_delivery(
-            db,
-            app,
-            event,
-            body.channel,
-            body.locale,
-            body.variant,
-            get_settings().platform_default_locale,
-        )
+        if body.channel == "in_app":
+            _template, template_version = resolve_template(
+                db,
+                app,
+                event,
+                body.channel,
+                body.locale,
+                body.variant,
+                get_settings().platform_default_locale,
+            )
+            provider = None
+        else:
+            delivery = resolve_delivery(
+                db,
+                app,
+                event,
+                body.channel,
+                body.locale,
+                body.variant,
+                get_settings().platform_default_locale,
+            )
+            template_version = delivery.template_version
+            provider = delivery.provider
     except ResolutionError as exc:
         fail(409, exc.code, str(exc))
     payload = body.model_dump(mode="json")
@@ -800,7 +815,10 @@ def create_notification(
         channel=body.channel,
         recipient=body.recipient,
         event_data=body.data,
-        metadata_json=body.metadata,
+        metadata_json={
+            **body.metadata,
+            **({"expires_at": body.expires_at.isoformat()} if body.expires_at else {}),
+        },
         locale=body.locale or app.default_locale,
         variant=body.variant or "default",
         priority=body.priority,
@@ -809,8 +827,8 @@ def create_notification(
         request_fingerprint=fingerprint,
         scheduled_at=body.scheduled_at,
         status=NotificationStatus.ACCEPTED,
-        template_version_id=delivery.template_version.id,
-        provider_config_id=delivery.provider.id,
+        template_version_id=template_version.id,
+        provider_config_id=provider.id if provider else None,
     )
     db.add(notification)
     try:

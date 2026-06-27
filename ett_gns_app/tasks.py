@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
+from typing import Any, TypeVar, cast
 
 from celery import Celery
 from sqlalchemy import select
@@ -32,14 +34,20 @@ celery_app.conf.update(
     },
 )
 
+TaskFunc = TypeVar("TaskFunc", bound=Callable[..., object])
 
-@celery_app.task(name="gns.deliver")
+
+def typed_task(*args: Any, **kwargs: Any) -> Callable[[TaskFunc], TaskFunc]:
+    return cast(Callable[[TaskFunc], TaskFunc], celery_app.task(*args, **kwargs))
+
+
+@typed_task(name="gns.deliver")
 def deliver(notification_id: str) -> str:
     with SessionLocal() as db:
         return process_notification(db, notification_id, settings).status
 
 
-@celery_app.task(name="gns.publish_outbox")
+@typed_task(name="gns.publish_outbox")
 def publish_outbox(batch_size: int = 100) -> int:
     now = datetime.now(UTC)
     published = 0
@@ -64,7 +72,7 @@ def publish_outbox(batch_size: int = 100) -> int:
             row.publish_attempts += 1
             db.commit()
             try:
-                deliver.apply_async(args=[row.aggregate_id], eta=eta)
+                cast(Any, deliver).apply_async(args=[row.aggregate_id], eta=eta)
                 row.published_at = datetime.now(UTC)
                 row.last_error = None
                 notification = db.get(Notification, row.aggregate_id)
@@ -82,7 +90,7 @@ def publish_outbox(batch_size: int = 100) -> int:
     return published
 
 
-@celery_app.task(name="gns.reconcile")
+@typed_task(name="gns.reconcile")
 def reconcile() -> dict[str, int]:
     with SessionLocal() as db:
         return {"stuck_notifications": reconcile_stuck_notifications(db, settings)}

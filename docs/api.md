@@ -26,6 +26,11 @@ Production uses an OIDC bearer token whose issuer, audience, signature, expiry a
 - `/api/v1/apps/{app_id}/providers`
 - `/api/v1/provider-configs/test-connection`
 - `/api/v1/provider-configs/{provider_id}/test|replace-secret|activate|deactivate|set-default|unset-default`
+- `/api/v1/in-app/stream`
+- `/api/v1/in-app/notifications`
+- `/api/v1/in-app/unread-count`
+- `/api/v1/in-app/preferences`
+- `/api/v1/admin/in-app/notifications|connections|delivery-attempts|test`
 - `/api/v1/audits`
 - `/api/v1/operations/dashboard`
 - `/api/v1/operations/notifications`

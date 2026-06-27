@@ -18,12 +18,22 @@
 - [x] Guided onboarding checklist
 - [x] Provider pre-save test, provider-config aliases, default/unset-default and safe archive
 - [x] Swagger Bearer auth and credential-derived notification app scope
+- [x] In-app notification channel, durable storage, SSE, user APIs, preferences and admin visibility
+- [x] React/Next in-app SDK package and demo app source
+- [x] SMTP TLS failure diagnostics and documentation
+- [x] Provider edit, fallback policy, health diagnostics and write-only secret replacement UI
+- [x] Main notification test-send UI using real application Bearer auth and idempotency
+- [x] Strictly typed Celery task decorators for mypy
+- [x] Alembic config escaping for database URLs containing `%`
 
 ## Human/external actions
 
 - [ ] Run Docker Compose E2E and record API/outbox/worker/scheduler/PostgreSQL/RabbitMQ/Redis/Mailpit results.
+- [ ] URL-encode the external Supabase/PostgreSQL password in `GNS_DATABASE_URL` before live Alembic verification.
 - [ ] Supply provider sandbox credentials and verify live delivery/callbacks.
 - [ ] Supply OIDC issuer/audience and verify live role claims.
 - [ ] Supply staging target/cloud permissions and execute deployment workflows.
 - [ ] Run k6 scenarios against representative staging and record measurements.
+- [ ] Replace local in-memory in-app SSE hub with Redis pub/sub or streams for multi-instance production.
+- [ ] Integrate IAM role/group membership expansion for large fan-out.
 - [ ] Configure deployment-specific alert destinations, retention and on-call ownership.

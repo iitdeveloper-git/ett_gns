@@ -84,6 +84,7 @@ def required_content_fields(channel: str) -> set[str]:
             "parameters",
             "opt_in_reference",
         },
+        "in_app": {"title", "message"},
     }[channel]
 
 
@@ -135,16 +136,40 @@ def validate_template_content(
         )
         if sanitized != html:
             errors.append("HTML contains disallowed elements, attributes, or URL protocols")
+    if channel == "in_app":
+        severity = content.get("severity", "info")
+        if severity not in {"info", "success", "warning", "error", "critical"}:
+            errors.append("In-app severity must be info, success, warning, error, or critical")
+        action = content.get("action")
+        if action is not None:
+            if not isinstance(action, dict):
+                errors.append("In-app action must be an object")
+            else:
+                url = str(action.get("url", ""))
+                action_type = action.get("type", "deep_link")
+                if action_type not in {"deep_link"}:
+                    errors.append("In-app action type must be deep_link")
+                if not url.startswith("/") or url.startswith("//") or "javascript:" in url.lower():
+                    errors.append("In-app action URL must be a safe relative path")
+        toast = content.get("toast", {})
+        if toast and not isinstance(toast, dict):
+            errors.append("In-app toast must be an object")
+        elif toast:
+            auto_dismiss = toast.get("auto_dismiss_ms", 6000)
+            if not isinstance(auto_dismiss, int) or not 1000 <= auto_dismiss <= 60000:
+                errors.append("In-app toast auto_dismiss_ms must be between 1000 and 60000")
     return errors
 
 
-def render_content(content: dict[str, Any], data: dict[str, Any]) -> dict[str, str]:
-    rendered: dict[str, str] = {}
+def render_content(content: dict[str, Any], data: dict[str, Any]) -> dict[str, Any]:
+    rendered: dict[str, Any] = {}
     env = environment()
     for field, value in content.items():
         if isinstance(value, str):
             result = env.from_string(value).render(data)
             rendered[field] = result
+        elif isinstance(value, dict):
+            rendered[field] = render_content(value, data)
         else:
-            rendered[field] = str(value)
+            rendered[field] = value
     return rendered
